@@ -56,6 +56,11 @@ RFC959 was published:
 
 - [http://cr.yp.to/ftp.html](http://cr.yp.to/ftp.html)
 
-For a history lesson, check out Appendix III of RCF959. It lists the preceeding
+For a history lesson, check out Appendix III of RCF959. It lists the preceding
 (obsolete) RFC documents that relate to file transfers, including the ye old
 RFC114 from 1971, "A File Transfer Protocol"
+
+For more information on EventMacine, a library that (among other things) simplifies
+writing applications that use sockets, check out their website.
+
+- [http://rubyeventmachine.com/](http://rubyeventmachine.com/)
