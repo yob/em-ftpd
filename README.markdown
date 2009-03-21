@@ -15,8 +15,35 @@ This isn't a useful FTP server. It has hard coded authentication and an
 emulated directory structure. I hope it serves as a useful piece of sample code
 regardless.
 
+# Author
+
+James Healy <james@yob.id.au>
+http://www.yob.id.au
+
+## License
+
+This library is distributed under the terms of the MIT License. See the included file for
+more detail.
+
+## Contributing
+
+All suggestions and patches welcome, preferably via a git repository I can pull from.
+If this demo proves useful to you, please let me know.
+
+## Usage
+
+As root (so you can bind to a port < 1024):
+
+    ruby ftpd.rb [uid] [gid]
+
+## Authentication Details:
+
+The login details are hard coded. Username: test Password: 1234
+
+## Further Reading
+#
 There are a range of RFCs that together specify the FTP protocol. In chronological
-order:
+order, the more useful ones are:
 
 - [http://tools.ietf.org/rfc/rfc959.txt](http://tools.ietf.org/rfc/rfc959.txt)
 - [http://tools.ietf.org/rfc/rfc1123.txt](http://tools.ietf.org/rfc/rfc1123.txt)
@@ -28,15 +55,3 @@ some commentry on what features are actually useful or relevant 24 years after
 RFC959 was published:
 
 - [http://cr.yp.to/ftp.html](http://cr.yp.to/ftp.html)
-
-## License
-
-## Usage
-
-As root (so you can bind to a port < 1024):
-
-    ruby ftpd.rb [uid] [gid]
-
-## Authentication Details:
-
-The login details are hard coded. Username: test Password: 1234
