@@ -547,15 +547,14 @@ if $0 == __FILE__
     EventMachine::start_server("0.0.0.0", 21, FTPServer)
 
     # once the server has spun up, change the owner of process
-    # for seceurity reasons. I don't even trust my own code to
+    # for security reasons. I don't even trust my own code to
     # run as root, let alone my code that's running an Internet
     # visible network service.
     if gid && Process.gid == 0
       Process.gid = gid
     end
     if uid && Process.euid == 0
-      Process.uid  = uid
-      Process.euid = uid
+      Process::Sys.setuid(uid)
     end
 
   end
