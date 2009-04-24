@@ -192,6 +192,8 @@ module FTPServer
   #
   def cmd_nlst(param)
     send_unautorised and return unless logged_in?
+    send_illegal_params and return if param && param[/^\.\./]
+    send_illegal_params and return if param && param[/^\//]
     send_response "150 Opening ASCII mode data connection for file list"
     case @dir
     when "/"
@@ -334,8 +336,8 @@ module FTPServer
     send_unautorised and return unless logged_in?
     send_response "450 file not available" and return unless @dir.eql?("/") || @dir.eql?("files")
     send_param_required and return if param.nil?
-    send_response "553 action aborted. illegal filename" and return if param[/^\.\./]
-    send_response "553 action aborted. illegal filename" and return if param[/^\//]
+    send_illegal_params and return if param && param[/^\.\./]
+    send_illegal_params and return if param && param[/^\//]
 
     # if file exists, send it to the client
     if @dir == "/" && param == "one.txt"
@@ -505,6 +507,10 @@ module FTPServer
 
   def send_permission_denied
     send_response "550 Permission denied"
+  end
+
+  def send_illegal_params
+    send_response "553 action aborted, illegal params"
   end
 
   def send_unauthorised
