@@ -75,6 +75,7 @@ module FTPServer
     if space
       cmd = data[0, space]
       param = data[space+1, data.length - space]
+      param = nil if param.strip.size == 0
     else
       cmd = data
       param = nil
@@ -111,6 +112,7 @@ module FTPServer
   # go up a directory, really just an alias
   def cmd_cdup(param)
     send_unautorised and return unless logged_in?
+    send_param_required and return if param.nil?
     cmd_cwd("..")
   end
 
@@ -176,6 +178,7 @@ module FTPServer
   # socket unchanged.
   #
   def cmd_mode(param)
+    send_param_required and return if param.nil?
     if param.upcase.eql?("S")
       send_response "200 OK"
     else
@@ -244,6 +247,7 @@ module FTPServer
   # handle the PASS FTP command. This is the second stage of a user logging in
   def cmd_pass(param)
     send_response "202 User already logged in" and return if @user
+    send_param_required and return if param.nil?
     send_response "530 password with no username" and return if @requested_user.nil?
 
     # return an error message if:
@@ -292,6 +296,7 @@ module FTPServer
   # ready for either end to send something down it.
   def cmd_port(param)
     send_unautorised and return unless logged_in?
+    send_param_required and return if param.nil?
 
     nums = param.split(',')
     port = nums[4].to_i * 256 + nums[5].to_i
@@ -328,6 +333,7 @@ module FTPServer
     # not allowed to
     send_unautorised and return unless logged_in?
     send_response "450 file not available" and return unless @dir.eql?("/") || @dir.eql?("files")
+    send_param_required and return if param.nil?
     send_response "553 action aborted. illegal filename" and return if param[/^\.\./]
     send_response "553 action aborted. illegal filename" and return if param[/^\//]
 
@@ -394,6 +400,7 @@ module FTPServer
   # save a file from a client
   def cmd_stor(param)
     send_unautorised and return unless logged_in?
+    send_param_required and return if param.nil?
     send_response "553 action aborted. illegal filename" and return if param[/^\./]
     send_response "553 action aborted. illegal filename" and return if param[/^\//]
 
@@ -421,6 +428,7 @@ module FTPServer
   # These days files are sent unmodified, and F(ile) mode is the only one we
   # really need to support.
   def cmd_stru(param)
+    send_param_required and return if param.nil?
     if param.upcase.eql?("F")
       send_response "200 OK"
     else
@@ -444,6 +452,7 @@ module FTPServer
   # ignore it.
   def cmd_type(param)
     send_unautorised and return unless logged_in?
+    send_param_required and return if param.nil?
     if param.upcase.eql?("A")
       send_response "200 Type set to ASCII"
     elsif param.upcase.eql?("I")
@@ -457,6 +466,7 @@ module FTPServer
   # we simply store the requested user name as an instance variable
   # and wait for the password to be submitted before doing anything
   def cmd_user(param)
+    send_param_required and return if param.nil?
     @requested_user = param
     send_response "331 OK, password required"
   end
@@ -487,6 +497,10 @@ module FTPServer
     puts msg
     msg += LBRK unless no_linebreak
     send_data msg
+  end
+
+  def send_param_required
+    send_response "553 action aborted, required param missing"
   end
 
   def send_unauthorised
