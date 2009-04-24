@@ -17,7 +17,8 @@ module FTPServer
 
   LBRK = "\r\n"
   COMMANDS = %w[quit type user retr stor port cdup cwd dele rmd pwd list size
-                syst mkd pass xcup xpwd xcwd rest allo nlst pasv allo help noop]
+                syst mkd pass xcup xpwd xcwd xrmd rest allo nlst pasv allo help
+                noop mode rnfr rnto stru]
   FILE_ONE = "This is the first file available for download.\n\nBy James"
   FILE_TWO = "This is the file number two.\n\n2009-03-21"
   attr_accessor :datasocket
@@ -324,6 +325,9 @@ module FTPServer
   def cmd_rmd(param)
     send_response "550 Permission denied"
   end
+
+  # As per RFC1123, XRMD is a synonym for RMD
+  alias cmd_xrmd cmd_rmd
 
   # rename a file
   def cmd_rnfr(param)
