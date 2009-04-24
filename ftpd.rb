@@ -148,7 +148,7 @@ module FTPServer
 
   # delete a file
   def cmd_dele(param)
-    send_response "550 Permission denied"
+    send_permission_denied
   end
 
   # handle the HELP FTP command by sending a list of available commands.
@@ -169,7 +169,7 @@ module FTPServer
 
   # make directory
   def cmd_mkd(param)
-    send_response "550 Permission denied"
+    send_permission_denied
   end
 
   # the original FTP spec had various options for hosts to negotiate how data
@@ -354,7 +354,7 @@ module FTPServer
 
   # delete a directory
   def cmd_rmd(param)
-    send_response "550 Permission denied"
+    send_permission_denied
   end
 
   # As per RFC1123, XRMD is a synonym for RMD
@@ -362,12 +362,12 @@ module FTPServer
 
   # rename a file
   def cmd_rnfr(param)
-    send_response "550 Permission denied"
+    send_permission_denied
   end
 
   # rename a file
   def cmd_rnto(param)
-    send_response "550 Permission denied"
+    send_permission_denied
   end
 
   # handle the QUIT FTP command by closing the connection
@@ -501,6 +501,10 @@ module FTPServer
 
   def send_param_required
     send_response "553 action aborted, required param missing"
+  end
+
+  def send_permission_denied
+    send_response "550 Permission denied"
   end
 
   def send_unauthorised
