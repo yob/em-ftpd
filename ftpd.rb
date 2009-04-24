@@ -205,10 +205,35 @@ module FTPServer
     end
   end
 
-  # list *should* return a full listing (with size, etc - like ls -l does), but
-  # I'm lazy and it's probably unnecessary for a basic server, so I'm making
-  # it an alias of nlst
-  alias cmd_list cmd_nlst
+  # return a detailed list of files and directories, seperated by the
+  # FTP line break sequence
+  def cmd_list(param)
+    send_unauthorised and return unless logged_in?
+    send_illegal_params and return if param && param[/^\.\./]
+    send_illegal_params and return if param && param[/^\//]
+    send_response "150 Opening ASCII mode data connection for file list"
+    lines = []
+    timestr = Time.now.strftime("%b %d %H:%M")
+    case @dir
+    when "/"
+      lines << "drwxr-xr-x 1 owner group            0 #{timestr} ."
+      lines << "drwxr-xr-x 1 owner group            0 #{timestr} .."
+      lines << "drwxr-xr-x 1 owner group            0 #{timestr} files"
+      lines << "-rwxr-xr-x 1 owner group#{FILE_ONE.size.to_s.rjust(13)} #{timestr} one.txt"
+    when "files"
+      lines << "drwxr-xr-x 1 owner group            0 #{timestr} ."
+      lines << "drwxr-xr-x 1 owner group            0 #{timestr} .."
+      lines << "-rwxr-xr-x 1 owner group#{FILE_TWO.size.to_s.rjust(13)} #{timestr} two.txt"
+    end
+
+    begin
+      send_outofband_data(lines.join(LBRK) << LBRK)
+      send_response "226 Transfer complete"
+    rescue
+      send_response "425 Error establishing connection"
+    end
+
+  end
 
   # handle the NOOP FTP command. This is essentially a ping from the client
   # so we just respond with an empty 200 message.
