@@ -14,7 +14,7 @@ require 'socket'
 # license: MIT License // http://www.opensource.org/licenses/mit-license.php
 # copyright: (c) 2006 James Healy
 #
-module FTPServer
+class FTPServer < EM::Protocols::LineAndTextProtocol
 
   LBRK = "\r\n"
   COMMANDS = %w[quit type user retr stor port cdup cwd dele rmd pwd list size
@@ -33,27 +33,14 @@ module FTPServer
     send_response "220 FTP server (rftpd) ready"
   end
 
-  # Callback recognised by EventMachine that is called when data is received.
-  # EM makes no guarantees about data being delivered in packet sized chunks,
-  # so we buffer te received data and pop commands off once we find a full one.
+  # I used to implement the standard receive_data callback, then buffer data
+  # until I had a complete line. Now I just base my server on the
+  # LineAndTextProtocol class that is distributed with EM. It handles the
+  # buffering for me and calls this receive_line() method once the line is
+  # complete
   #
-  def receive_data(data)
-    @data ||= ""
-    @data << data
-
-    # if we have a complete command, extract it from the buffer and process it
-    if idx = @data.index(LBRK)
-      process_request(@data[0, idx + 1])
-      @data = @data[idx + 2, @data.size]
-    end
-  end
-
-  private
-
-  # Accepts a single complete FTP command, and if it contains a valid command
-  # calls the appropriate function.
-  #
-  def process_request(str)
+  def receive_line(str)
+    puts "line: #{str}"
     # break the request into command and parameter components
     cmd, param = parse_request(str)
 
@@ -68,6 +55,8 @@ module FTPServer
       bad_command(cmd, param)
     end
   end
+
+  private
 
   # split a client's request into command and parameter components
   def parse_request(data)
