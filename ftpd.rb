@@ -3,6 +3,7 @@
 require 'rubygems'
 gem 'eventmachine', '0.12.6'
 require 'eventmachine'
+require 'socket'
 
 # A demo FTP server, built on top of the EventMacine gem.
 #
