@@ -518,15 +518,16 @@ end
 class FTPActiveDataSocket < EventMachine::Connection
   include EM::Deferrable
 
-  attr_reader :data
-
   def self.open(host, port)
     EventMachine.connect(host, port, self)
   end
 
-  def receive_data(data)
+  def data
     @data ||= ""
-    @data << data
+  end
+
+  def receive_data(chunk)
+    data << chunk
   end
 
   def unbind
@@ -559,9 +560,12 @@ class FTPPassiveDataSocket < EventMachine::Connection
     Socket.unpack_sockaddr_in( EM.get_sockname( sig ) ).first
   end
 
-  def receive_data(data)
+  def data
     @data ||= ""
-    @data << data
+  end
+
+  def receive_data(chunk)
+    data << chunk
   end
 
   def unbind
