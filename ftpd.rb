@@ -4,6 +4,7 @@ require 'rubygems'
 gem 'eventmachine', '0.12.8'
 require 'eventmachine'
 require 'socket'
+require 'stringio'
 
 # A demo FTP server, built on top of the EventMacine gem.
 #
@@ -22,13 +23,15 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
                 noop mode rnfr rnto stru]
   FILE_ONE = "This is the first file available for download.\n\nBy James"
   FILE_TWO = "This is the file number two.\n\n2009-03-21"
+  attr_reader :root, :name_prefix
   attr_accessor :datasocket
 
   # callback recognised by EventMachine that is called when a new connection
   # is initiated
   #
   def post_init
-    @dir = "/"
+    @mode   = :binary
+    @name_prefix = "/"
 
     send_response "220 FTP server (rftpd) ready"
   end
@@ -57,6 +60,17 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   end
 
   private
+
+  def build_path(filename = nil)
+    if filename && filename[0,1] == "/"
+      path = File.expand_path(filename)
+    elsif filename
+      path = File.expand_path("#{@name_prefix}/#{filename}")
+    else
+      path = File.expand_path(@name_prefix)
+    end
+    path.gsub(/\/+/,"/")
+  end
 
   # split a client's request into command and parameter components
   def parse_request(data)
@@ -101,8 +115,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
 
   # go up a directory, really just an alias
   def cmd_cdup(param)
-    send_unautorised and return unless logged_in?
-    send_param_required and return if param.nil?
+    send_unauthorised and return unless logged_in?
     cmd_cwd("..")
   end
 
@@ -111,23 +124,14 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
 
   # change directory
   def cmd_cwd(param)
-    send_unautorised and return unless logged_in?
-    case param
-    when "/"
-      @dir = "/"
-      send_response "250 Directory changed to /"
-    when "."
-      send_response "250 Directory changed to #{@dir}"
-    when ".."
-      @dir = "/"
-      send_response "250 Directory changed to /"
-    when /^files.?/
-      if @dir.eql?("/")
-        @dir = "files"
-        send_response "250 Directory changed to files"
-      else
-        send_response "550 Directory not found"
-      end
+    send_unauthorised and return unless logged_in?
+    path = build_path(param)
+
+    puts "************* '#{path}"
+    case path
+    when "/", "/files"
+      @name_prefix = path
+      send_response "250 Directory changed to #{path}"
     else
       send_response "550 Directory not found"
     end
@@ -168,6 +172,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # socket unchanged.
   #
   def cmd_mode(param)
+    send_unauthorised and return unless logged_in?
     send_param_required and return if param.nil?
     if param.upcase.eql?("S")
       send_response "200 OK"
@@ -181,14 +186,13 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # to the client over a data socket.
   #
   def cmd_nlst(param)
-    send_unautorised and return unless logged_in?
-    send_illegal_params and return if param && param[/^\.\./]
-    send_illegal_params and return if param && param[/^\//]
+    send_unauthorised and return unless logged_in?
     send_response "150 Opening ASCII mode data connection for file list"
-    case @dir
+
+    case build_path(param)
     when "/"
       files = %w[. .. files one.txt]
-    when "files"
+    when "/files"
       files = %w[. .. two.txt]
     end
 
@@ -204,20 +208,19 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # FTP line break sequence
   def cmd_list(param)
     send_unauthorised and return unless logged_in?
-    send_illegal_params and return if param && param[/^\.\./]
-    send_illegal_params and return if param && param[/^\//]
     send_response "150 Opening ASCII mode data connection for file list"
-    lines = []
+
     timestr = Time.now.strftime("%b %d %H:%M")
-    case @dir
+    lines = []
+    lines << "drwxr-xr-x 1 owner group            0 #{timestr} ."
+    lines << "drwxr-xr-x 1 owner group            0 #{timestr} .."
+
+    path = build_path(param)
+    case path
     when "/"
-      lines << "drwxr-xr-x 1 owner group            0 #{timestr} ."
-      lines << "drwxr-xr-x 1 owner group            0 #{timestr} .."
       lines << "drwxr-xr-x 1 owner group            0 #{timestr} files"
       lines << "-rwxr-xr-x 1 owner group#{FILE_ONE.size.to_s.rjust(13)} #{timestr} one.txt"
-    when "files"
-      lines << "drwxr-xr-x 1 owner group            0 #{timestr} ."
-      lines << "drwxr-xr-x 1 owner group            0 #{timestr} .."
+    when "/files"
       lines << "-rwxr-xr-x 1 owner group#{FILE_TWO.size.to_s.rjust(13)} #{timestr} two.txt"
     end
 
@@ -251,7 +254,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
       return
     end
 
-    @dir = "/"
+    @name_prefix = "/"
     @user = @requested_user
     @requested_user = nil
     send_response "230 OK, password correct"
@@ -261,7 +264,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # data connection. The listening socket is opened on a random port, so
   # the host and port is sent back to the client on the control socket.
   def cmd_pasv(param)
-    send_unautorised and return unless logged_in?
+    send_unauthorised and return unless logged_in?
 
     # close any existing data socket
     close_datasocket
@@ -287,7 +290,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # open a connection to the host and port they specify and save the connection,
   # ready for either end to send something down it.
   def cmd_port(param)
-    send_unautorised and return unless logged_in?
+    send_unauthorised and return unless logged_in?
     send_param_required and return if param.nil?
 
     nums = param.split(',')
@@ -307,8 +310,8 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
 
   # return the current directory
   def cmd_pwd(param)
-    send_unautorised and return unless logged_in?
-    send_response "257 \"#{@dir}\" is the current directory"
+    send_unauthorised and return unless logged_in?
+    send_response "257 \"#{@name_prefix}\" is the current directory"
   end
 
   # As per RFC1123, XPWD is a synonym for PWD
@@ -321,25 +324,23 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
 
   # send a file to the client
   def cmd_retr(param)
-    # safety checks to make sure clients can't request files they're
-    # not allowed to
-    send_unautorised and return unless logged_in?
-    send_response "450 file not available" and return unless @dir.eql?("/") || @dir.eql?("files")
+    send_unauthorised and return unless logged_in?
     send_param_required and return if param.nil?
-    send_illegal_params and return if param && param[/^\.\./]
-    send_illegal_params and return if param && param[/^\//]
+
+    path = build_path(param)
 
     # if file exists, send it to the client
-    if @dir == "/" && param == "one.txt"
+    case path
+    when "/one.txt"
       send_response "150 Data transfer starting"
       bytes = send_outofband_data(FILE_ONE)
       send_response "226 Closing data connection, sent #{bytes} bytes"
-    elsif @dir == "files" && param == "two.txt"
+    when "/files/two.txt"
       send_response "150 Data transfer starting"
       bytes = send_outofband_data(FILE_TWO)
       send_response "226 Closing data connection, sent #{bytes} bytes"
-    # otherwise, inform the user the file doesn't exist
     else
+      # otherwise, inform the user the file doesn't exist
       send_response "551 file not available"
     end
   end
@@ -373,15 +374,15 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   def cmd_size(param)
     # safety checks to make sure clients can't request files they're
     # not allowed to
-    send_unautorised and return unless logged_in?
-    send_response "450 file not available" and return unless @dir.eql?("/") || @dir.eql?("files")
-    send_response "553 action aborted. illegal filename" and return if param[/^\.\./]
-    send_response "553 action aborted. illegal filename" and return if param[/^\//]
+    send_unauthorised and return unless logged_in?
+    send_param_required and return if param.nil?
+
+    path = build_path(param)
 
     # if file exists, send it to the client
-    if @dir == "/" && param == "one.txt"
+    if path == "/one.txt"
       send_response "213 #{FILE_ONE.size}"
-    elsif @dir == "files" && param == "two.txt"
+    elsif path == "/files/two.txt"
       send_response "213 #{FILE_TWO.size}"
     else
       # otherwise, inform the user the file doesn't exist
@@ -391,13 +392,13 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
 
   # save a file from a client
   def cmd_stor(param)
-    send_unautorised and return unless logged_in?
+    send_unauthorised and return unless logged_in?
     send_param_required and return if param.nil?
-    send_response "553 action aborted. illegal filename" and return if param[/^\./]
-    send_response "553 action aborted. illegal filename" and return if param[/^\//]
 
     # let the client know we're ready to start
     send_response "150 Data transfer starting"
+
+    filename = build_path(param)
 
     # the client is going to spit some data at us over the data socket. Add
     # a callback that will execute when the client closes the socket. We more
@@ -421,6 +422,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # really need to support.
   def cmd_stru(param)
     send_param_required and return if param.nil?
+    send_unauthorised and return unless logged_in?
     if param.upcase.eql?("F")
       send_response "200 OK"
     else
@@ -443,7 +445,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # adequate. The RFC requires we accept ASCII mode however, so accept it, but
   # ignore it.
   def cmd_type(param)
-    send_unautorised and return unless logged_in?
+    send_unauthorised and return unless logged_in?
     send_param_required and return if param.nil?
     if param.upcase.eql?("A")
       send_response "200 Type set to ASCII"
@@ -459,12 +461,14 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # and wait for the password to be submitted before doing anything
   def cmd_user(param)
     send_param_required and return if param.nil?
+    send_response("500 Already logged in") and return if @user
     @requested_user = param
     send_response "331 OK, password required"
   end
 
   # send data to the client
   def send_outofband_data(data)
+    data = StringIO.new(data) if data.kind_of?(String)
     bytes = 0
     begin
       data.each do |line|
