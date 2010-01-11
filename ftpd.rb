@@ -1,7 +1,7 @@
 # coding: utf-8
 
 require 'rubygems'
-gem 'eventmachine', '0.12.8'
+gem 'eventmachine', '>=0.12.8'
 require 'eventmachine'
 require 'socket'
 require 'stringio'
