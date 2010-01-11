@@ -301,8 +301,8 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     puts "connecting to client #{host} on #{port}"
     @datasocket = FTPActiveDataSocket.open(host, port)
 
-    puts "Opened passive connection at #{host}:#{port}"
-    send_response "200 Passive connection established (#{port})"
+    puts "Opened active connection at #{host}:#{port}"
+    send_response "200 Connection established (#{port})"
   rescue
     puts "Error opening data connection to #{host}:#{port}"
     send_response "425 Data connection failed"
