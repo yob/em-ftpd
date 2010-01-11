@@ -196,12 +196,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
       files = %w[. .. two.txt]
     end
 
-    begin
-      send_outofband_data(files.join(LBRK) << LBRK)
-      send_response "226 Transfer complete"
-    rescue
-      send_response "425 Error establishing connection"
-    end
+    send_outofband_data(files.join(LBRK) << LBRK)
   end
 
   # return a detailed list of files and directories, seperated by the
@@ -224,13 +219,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
       lines << "-rwxr-xr-x 1 owner group#{FILE_TWO.size.to_s.rjust(13)} #{timestr} two.txt"
     end
 
-    begin
-      send_outofband_data(lines.join(LBRK) << LBRK)
-      send_response "226 Transfer complete"
-    rescue
-      send_response "425 Error establishing connection"
-    end
-
+    send_outofband_data(lines.join(LBRK) << LBRK)
   end
 
   # handle the NOOP FTP command. This is essentially a ping from the client
@@ -333,12 +322,10 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     case path
     when "/one.txt"
       send_response "150 Data transfer starting"
-      bytes = send_outofband_data(FILE_ONE)
-      send_response "226 Closing data connection, sent #{bytes} bytes"
+      send_outofband_data(FILE_ONE)
     when "/files/two.txt"
       send_response "150 Data transfer starting"
-      bytes = send_outofband_data(FILE_TWO)
-      send_response "226 Closing data connection, sent #{bytes} bytes"
+      send_outofband_data(FILE_TWO)
     else
       # otherwise, inform the user the file doesn't exist
       send_response "551 file not available"
@@ -468,23 +455,25 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
 
   # send data to the client
   def send_outofband_data(data)
+    if @datasocket.nil?
+      EventMachine.next_tick { send_outofband_data(data)}
+      return
+    end
+
     data = StringIO.new(data) if data.kind_of?(String)
-    bytes = 0
     begin
+      bytes = 0
       data.each do |line|
         @datasocket.send_data(line)
         bytes += line.length
       end
-    rescue Errno::EPIPE
-      puts "#{@user} aborted file transfer"
-      quit
-    else
-      puts "#{@user} got #{bytes} bytes"
+      send_response "226 Closing data connection, sent #{bytes} bytes"
     ensure
       close_datasocket
       data.close if data.class == File
     end
-    bytes
+  rescue
+    send_response "425 Error establishing connection"
   end
 
   # all responses from an FTP server end with \r\n, so wrap the
