@@ -17,6 +17,14 @@ class FTPServer
     @sent_data = ""
   end
 
+  def oobdata
+    @oobdata ||= ""
+  end
+  
+  def reset_oobdata!
+    @oobdata = ""
+  end
+
   def initialize
     connection_completed
   end
@@ -36,23 +44,11 @@ class FTPServer
   end
 end
 
-class FTPServerInterceptData < FTPServer
-
-  def oobdata
-    @oobdata ||= ""
-  end
-
-  private
-
-  def send_outofband_data(data)
-    oobdata << data
-  end
-end
-
 class FTPPassiveDataSocket
   class << self
     def start(host, control_server)
       control_server.datasocket = self.new(nil)
+      @@control_server = control_server
       "12345"
     end
 
@@ -66,15 +62,15 @@ class FTPPassiveDataSocket
   end
 
   def send_data(data)
-    sent_data << data
+    @@control_server.oobdata << data
   end
 
   def sent_data
-    @sent_data ||= ''
+    @@control_server.oobdata
   end
 
   def reset_sent!
-    @sent_data = ""
+    @@control_server.reset_oobdata!
   end
 
   def close_connection_after_writing
@@ -275,7 +271,7 @@ context FTPServer, "LIST" do
       "drwxr-xr-x 1 owner group            0 #{timestr} ..",
       "-rwxr-xr-x 1 owner group           40 #{timestr} two.txt"
     ]
-    @c = FTPServerInterceptData.new(nil)
+    @c = FTPServer.new(nil)
   end
 
   specify "should respond with 530 when called by non-logged in user" do
@@ -304,9 +300,9 @@ context FTPServer, "LIST" do
     @c.sent_data.should match(/150.+226.+/m)
     @c.oobdata.split(FTPServer::LBRK).should eql(@files_array)
   end
-
+  
   specify "should respond with 150 ... 226 when called in the files dir with wildcard (LIST *.txt)"
-
+  
   specify "should respond with 150 ... 226 when called in the subdir with .. param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -317,7 +313,7 @@ context FTPServer, "LIST" do
     @c.sent_data.should match(/150.+226.+/m)
     @c.oobdata.split(FTPServer::LBRK).should eql(@root_array)
   end
-
+  
   specify "should respond with 150 ... 226 when called in the subdir with / param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -328,7 +324,7 @@ context FTPServer, "LIST" do
     @c.sent_data.should match(/150.+226.+/m)
     @c.oobdata.split(FTPServer::LBRK).should eql(@root_array)
   end
-
+  
   specify "should respond with 150 ... 226 when called in the root with files param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -338,7 +334,7 @@ context FTPServer, "LIST" do
     @c.sent_data.should match(/150.+226.+/m)
     @c.oobdata.split(FTPServer::LBRK).should eql(@files_array)
   end
-
+  
   specify "should respond with 150 ... 226 when called in the root with files/ param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -403,7 +399,7 @@ context FTPServer, "NLST" do
     timestr = Time.now.strftime("%b %d %H:%M")
     @root_array  = %w{ . .. files one.txt }
     @files_array = %w{ . .. two.txt}
-    @c = FTPServerInterceptData.new(nil)
+    @c = FTPServer.new(nil)
   end
 
   specify "should respond with 530 when called by non-logged in user" do
