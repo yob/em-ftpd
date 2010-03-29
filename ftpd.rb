@@ -442,7 +442,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
 
   # send data to the client across the data socket.
   #
-  # The data socket is NOT garunteed to be setup by the time this method runs.
+  # The data socket is NOT guaranteed to be setup by the time this method runs.
   # If it isn't ready yet, exit the method and try again on the next reactor
   # tick. This is particularly likely with some clients that operate in passive
   # mode. They get a message on the control port with the data port details, so
@@ -475,11 +475,11 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     send_response "425 Error establishing connection"
   end
 
-  # send data to the client across the data socket.
+  # receive a file data from the client across the data socket.
   #
-  # The data socket is NOT garunteed to be setup by the time this method runs.
+  # The data socket is NOT guaranteed to be setup by the time this method runs.
   # If this happens, exit the method early and try again later. See the method
-  # comments to send_outofband_data for further explaination.
+  # comments to send_outofband_data for further explanation.
   #
   def receive_outofband_data(filename)
     if @datasocket.nil?
@@ -549,7 +549,7 @@ class FTPActiveDataSocket < EventMachine::Connection
   end
 
   def unbind
-    self.set_deferred_status :succeeded, @data
+    self.set_deferred_status :succeeded, data
   end
 end
 
@@ -587,7 +587,7 @@ class FTPPassiveDataSocket < EventMachine::Connection
   end
 
   def unbind
-    self.set_deferred_status :succeeded, @data
+    self.set_deferred_status :succeeded, data
   end
 end
 
