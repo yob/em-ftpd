@@ -453,9 +453,12 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # ready to use, so it may take a few RTTs after the command is received at
   # the server before the data socket is ready.
   #
-  def send_outofband_data(data)
-    if @datasocket.nil?
-      EventMachine.next_tick { send_outofband_data(data)}
+  def send_outofband_data(data, interval = 0.1)
+    if @datasocket.nil? && interval < 25
+      EventMachine.add_timer(interval) { send_outofband_data(data, interval * 2)}
+      return
+    elsif @datasocket.nil?
+      send_response "425 Error establishing connection"
       return
     end
 
@@ -481,10 +484,12 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # If this happens, exit the method early and try again later. See the method
   # comments to send_outofband_data for further explanation.
   #
-  def receive_outofband_data(filename)
-    if @datasocket.nil?
-      EventMachine.next_tick { receive_outofband_data(filename) }
+  def receive_outofband_data(filename, interval = 0.1)
+    if @datasocket.nil? && interval < 25
+      EventMachine.add_timer(interval) { receive_outofband_data(filename, interval * 2)}
       return
+    elsif @datasocket.nil?
+      send_response "425 Error establishing connection"
     end
 
     # the client is going to spit some data at us over the data socket. Add
