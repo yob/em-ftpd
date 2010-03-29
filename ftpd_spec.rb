@@ -280,15 +280,6 @@ context FTPServer, "LIST" do
     @c.sent_data.should match(/530.+/)
   end
 
-  specify "should respond with 150 ...425  when called with no data socket" do
-    @c = FTPServer.new(nil)
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("LIST")
-    @c.sent_data.should match(/150.+425.+/m)
-  end
-
   specify "should respond with 150 ... 226 when called in the root dir with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -415,15 +406,6 @@ context FTPServer, "NLST" do
     @c.reset_sent!
     @c.receive_line("NLST")
     @c.sent_data.should match(/530.+/)
-  end
-
-  specify "should respond with 150 ...425  when called with no data socket" do
-    @c = FTPServer.new(nil)
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("NLST")
-    @c.sent_data.should match(/150.+425.+/m)
   end
 
   specify "should respond with 150 ... 226 when called in the root dir with no param" do
