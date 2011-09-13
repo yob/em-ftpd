@@ -1,7 +1,8 @@
 # coding: utf-8
 
 require 'rubygems'
-require 'spec'
+require 'rspec'
+$: << '.'
 require 'ftpd'
 
 class FTPServer
@@ -79,7 +80,7 @@ class FTPPassiveDataSocket
 
 end
 
-context FTPServer, "initialisation" do
+describe FTPServer, "initialisation" do
 
   before(:each) do
     @c = FTPServer.new(nil)
@@ -90,56 +91,130 @@ context FTPServer, "initialisation" do
   end
 
   specify "should respond with 220 when connection is opened" do
-    @c.sent_data.should match(/220.+/)
+    @c.sent_data.should match(/^220/)
   end
 end
 
-context FTPServer, "ALLO" do
+describe FTPServer, "ALLO" do
 
   specify "should always respond with 202 when called" do
     @c = FTPServer.new(nil)
     @c.reset_sent!
     @c.receive_line("ALLO")
-    @c.sent_data.should match(/200.*/)
+    @c.sent_data.should match(/^202/)
   end
 end
 
-context FTPServer, "CDUP" do
+describe FTPServer, "USER" do
+
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
 
-  specify "should respond with 530 if user is not logged in" do
+  specify "should respond with 331 when called by non-logged in user" do
     @c.reset_sent!
-    @c.receive_line("CDUP")
-    @c.sent_data.should match(/530.*/)
-    @c.name_prefix.should eql("/")
+    @c.receive_line("USER jh")
+    @c.sent_data.should match(/331.+/)
   end
 
-  specify "should respond with 250 if called from root" do
+  specify "should respond with 500 when called by a logged in user" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
-    @c.receive_line("CDUP")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/")
-  end
-
-  specify "should respond with 250 if called from incoming dir" do
     @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("CWD files")
-    @c.reset_sent!
-    @c.receive_line("CDUP")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/")
+    @c.sent_data.should match(/500.+/)
   end
 
 end
 
-context FTPServer, "CWD" do
+describe FTPServer, "PASS" do
   before(:each) do
     @c = FTPServer.new(nil)
+  end
+
+  specify "should respond with 202 when called by logged in user" do
+    @c.stub!(:authenticate).and_return(true)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("PASS 1234")
+    @c.sent_data.should match(/202.+/)
+  end
+
+  specify "should respond with 553 when called with no param" do
+    @c.receive_line("USER test")
+    @c.reset_sent!
+    @c.receive_line("PASS")
+    @c.sent_data.should match(/553.+/)
+  end
+
+  specify "should respond with 530 when called without first providing a username" do
+    @c.reset_sent!
+    @c.receive_line("PASS 1234")
+    @c.sent_data.should match(/530.+/)
+  end
+
+  it "should respond with 230 when user is authenticated" do
+    @c.stub!(:authenticate).and_return(true)
+    @c.receive_line("USER test")
+    @c.reset_sent!
+    @c.receive_line("PASS 1234")
+    @c.sent_data.should match(/230.+/)
+  end
+
+  it "should respond with 530 when user is not authenticated" do
+    @c.stub!(:authenticate).and_return(false)
+    @c.receive_line("USER test")
+    @c.reset_sent!
+    @c.receive_line("PASS 1234")
+    @c.sent_data.should match(/530.+/)
+  end
+
+end
+
+%w(CDUP XCUP).each do |command|
+
+  describe FTPServer, command do
+    before(:each) do
+      @c = FTPServer.new(nil)
+      @c.stub!(:authenticate).and_return(true)
+      @c.stub!(:change_dir).and_return(true)
+    end
+
+    specify "should respond with 530 if user is not logged in" do
+      @c.reset_sent!
+      @c.receive_line(command)
+      @c.sent_data.should match(/530.*/)
+      @c.name_prefix.should eql("/")
+    end
+
+    specify "should respond with 250 if called from root" do
+      @c.receive_line("USER test")
+      @c.receive_line("PASS 1234")
+      @c.reset_sent!
+      @c.receive_line(command)
+      @c.sent_data.should match(/250.+/)
+      @c.name_prefix.should eql("/")
+    end
+
+    specify "should respond with 250 if called from incoming dir" do
+      @c.receive_line("USER test")
+      @c.receive_line("PASS 1234")
+      @c.receive_line("CWD files")
+      @c.reset_sent!
+      @c.receive_line(command)
+      @c.sent_data.should match(/250.+/)
+      @c.name_prefix.should eql("/")
+    end
+  end
+end
+
+describe FTPServer, "CWD" do
+  before(:each) do
+    @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
+    @c.stub!(:change_dir).and_return(true)
   end
 
   specify "should respond with 530 if user is not logged in" do
@@ -223,6 +298,7 @@ context FTPServer, "CWD" do
   end
 
   specify "should respond with 550 if called with unrecognised dir" do
+    @c.stub!(:change_dir).and_return(false)
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -234,18 +310,51 @@ context FTPServer, "CWD" do
 
 end
 
-context FTPServer, "DELE" do
+describe FTPServer, "DELE" do
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
-  specify "should always respond with 550 (permission denied) when called" do
+
+  specify "should respond with 530 if user is not logged in" do
+    @c.reset_sent!
+    @c.receive_line("DELE x")
+    @c.sent_data.should match(/530.*/)
+  end
+
+  it "should respond with 553 when the paramater is omitted" do
+    @c.stub!(:delete_file).and_return(true)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
     @c.reset_sent!
     @c.receive_line("DELE")
+    @c.sent_data.should match(/553.+/)
+  end
+
+  it "should respond with 250 when the file is deleted" do
+    @c.stub!(:delete_file).and_return(true)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.reset_sent!
+    @c.receive_line("DELE x")
+    @c.sent_data.should match(/250.+/)
+  end
+
+  it "should respond with 550 when the file is not deleted" do
+    @c.stub!(:delete_file).and_return(false)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.reset_sent!
+    @c.receive_line("DELE x")
     @c.sent_data.should match(/550.+/)
   end
+
 end
 
-context FTPServer, "HELP" do
+describe FTPServer, "HELP" do
   before(:each) do
     @c = FTPServer.new(nil)
   end
@@ -256,22 +365,30 @@ context FTPServer, "HELP" do
   end
 end
 
-context FTPServer, "LIST" do
+describe FTPServer, "LIST" do
+  # TODO: nlist
 
   before(:each) do
-    timestr = Time.now.strftime("%b %d %H:%M")
-    @root_array     = [
-      "drwxr-xr-x 1 owner group            0 #{timestr} .",
-      "drwxr-xr-x 1 owner group            0 #{timestr} ..",
-      "drwxr-xr-x 1 owner group            0 #{timestr} files",
-      "-rwxr-xr-x 1 owner group           56 #{timestr} one.txt"
-    ]
-    @files_array =[
-      "drwxr-xr-x 1 owner group            0 #{timestr} .",
-      "drwxr-xr-x 1 owner group            0 #{timestr} ..",
-      "-rwxr-xr-x 1 owner group           40 #{timestr} two.txt"
+    now = Time.now
+    timestr = now.strftime("%b %d %H:%M")
+    @files = [DirectoryItem.new(
+      :directory => true,
+      :permissions => 'rwxr-xr-x',
+      :owner => 'owner',
+      :group => 'group',
+      :size => 0,
+      :time => now,
+      :name => 'something',
+    )]
+    @files_output = [
+      "drwxrwxrwx 1 owner group            0 #{timestr} .",
+      "drwxrwxrwx 1 owner group            0 #{timestr} ..",
+      "drwxr-xr-x 1 owner group            0 #{timestr} something",
     ]
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
+    @c.stub!(:dir_contents).and_return(@files)
+    @c.stub!(:change_dir).and_return(true)
   end
 
   specify "should respond with 530 when called by non-logged in user" do
@@ -281,7 +398,6 @@ context FTPServer, "LIST" do
   end
 
   specify "should respond with 150 ...425  when called with no data socket" do
-    @c = FTPServer.new(nil)
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -296,7 +412,7 @@ context FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@root_array)
+    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
   end
 
   specify "should respond with 150 ... 226 when called in the files dir with no param" do
@@ -307,7 +423,7 @@ context FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_array)
+    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
   end
   
   specify "should respond with 150 ... 226 when called in the files dir with wildcard (LIST *.txt)"
@@ -320,7 +436,7 @@ context FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST ..")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@root_array)
+    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
   end
   
   specify "should respond with 150 ... 226 when called in the subdir with / param" do
@@ -331,7 +447,7 @@ context FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST /")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@root_array)
+    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
   end
   
   specify "should respond with 150 ... 226 when called in the root with files param" do
@@ -341,7 +457,7 @@ context FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST files")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_array)
+    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
   end
   
   specify "should respond with 150 ... 226 when called in the root with files/ param" do
@@ -351,26 +467,61 @@ context FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST files/")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_array)
+    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
   end
+
+  it "should properly list subdirs etc."
 
 end
 
-context FTPServer, "MKD" do
+describe FTPServer, "MKD" do
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
-  specify "should always respond with 550 (permission denied) when called" do
+
+  specify "should respond with 530 if user is not logged in" do
+    @c.reset_sent!
+    @c.receive_line("MKD x")
+    @c.sent_data.should match(/530.*/)
+  end
+
+  it "should respond with 553 when the paramater is omitted" do
+    @c.stub!(:make_dir).and_return(true)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("MKD")
+    @c.sent_data.should match(/553.+/)
+  end
+
+  specify "should respond with 257 when the directory is created" do
+    @c.stub!(:make_dir).and_return(true)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("MKD x")
+    @c.sent_data.should match(/257.+/)
+  end
+
+
+  specify "should respond with 550 when the directory is not created" do
+    @c.stub!(:make_dir).and_return(false)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("MKD x")
     @c.sent_data.should match(/550.+/)
   end
+
 end
 
-context FTPServer, "MODE" do
+describe FTPServer, "MODE" do
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
+
   specify "should respond with 553 when called with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -402,98 +553,7 @@ context FTPServer, "MODE" do
   end
 end
 
-context FTPServer, "NLST" do
-
-  before(:each) do
-    timestr = Time.now.strftime("%b %d %H:%M")
-    @root_array  = %w{ . .. files one.txt }
-    @files_array = %w{ . .. two.txt}
-    @c = FTPServer.new(nil)
-  end
-
-  specify "should respond with 530 when called by non-logged in user" do
-    @c.reset_sent!
-    @c.receive_line("NLST")
-    @c.sent_data.should match(/530.+/)
-  end
-
-  specify "should respond with 150 ...425  when called with no data socket" do
-    @c = FTPServer.new(nil)
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("NLST")
-    @c.sent_data.should match(/150.+425.+/m)
-  end
-
-  specify "should respond with 150 ... 226 when called in the root dir with no param" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("PASV")
-    @c.reset_sent!
-    @c.receive_line("NLST")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@root_array)
-  end
-
-  specify "should respond with 150 ... 226 when called in the files dir with no param" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("CWD files")
-    @c.receive_line("PASV")
-    @c.reset_sent!
-    @c.receive_line("NLST")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_array)
-  end
-
-  specify "should respond with 150 ... 226 when called in the files dir with wildcard (LIST *.txt)"
-
-  specify "should respond with 150 ... 226 when called in the subdir with .. param" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("CWD files")
-    @c.receive_line("PASV")
-    @c.reset_sent!
-    @c.receive_line("NLST ..")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@root_array)
-  end
-
-  specify "should respond with 150 ... 226 when called in the subdir with / param" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("CWD files")
-    @c.receive_line("PASV")
-    @c.reset_sent!
-    @c.receive_line("NLST /")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@root_array)
-  end
-
-  specify "should respond with 150 ... 226 when called in the root with files param" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("PASV")
-    @c.reset_sent!
-    @c.receive_line("NLST files")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_array)
-  end
-
-  specify "should respond with 150 ... 226 when called in the root with files/ param" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("PASV")
-    @c.reset_sent!
-    @c.receive_line("NLST files/")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_array)
-  end
-
-end
-
-context FTPServer, "NOOP" do
+describe FTPServer, "NOOP" do
   before(:each) do
     @c = FTPServer.new(nil)
   end
@@ -507,66 +567,43 @@ end
 
 # TODO PASV
 
-context FTPServer, "PWD" do
-  before(:each) do
-    @c = FTPServer.new(nil)
-  end
-  
-  specify "should always respond with 550 (permission denied) when called by non-logged in user" do
-    @c.reset_sent!
-    @c.receive_line("PWD")
-    @c.sent_data.should match(/530.+/)
-  end
+%w(PWD XPWD).each do |command|
+  describe FTPServer, command do
+    before(:each) do
+      @c = FTPServer.new(nil)
+      @c.stub!(:authenticate).and_return(true)
+      @c.stub!(:change_dir).and_return(true)
+    end
+    
+    specify "should always respond with 550 (permission denied) when called by non-logged in user" do
+      @c.reset_sent!
+      @c.receive_line(command)
+      @c.sent_data.should match(/530.+/)
+    end
 
-  specify "should always respond with 257 \"/\" when called from root dir" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("PWD")
-    @c.sent_data.strip.should eql("257 \"/\" is the current directory")
-  end
+    specify "should always respond with 257 \"/\" when called from root dir" do
+      @c.receive_line("USER test")
+      @c.receive_line("PASS 1234")
+      @c.reset_sent!
+      @c.receive_line(command)
+      @c.sent_data.strip.should eql("257 \"/\" is the current directory")
+    end
 
-  specify "should always respond with 257 \"/files\" when called from files dir" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("CWD files")
-    @c.reset_sent!
-    @c.receive_line("PWD")
-    @c.sent_data.strip.should eql("257 \"/files\" is the current directory")
+    specify "should always respond with 257 \"/files\" when called from files dir" do
+      @c.receive_line("USER test")
+      @c.receive_line("PASS 1234")
+      @c.receive_line("CWD files")
+      @c.reset_sent!
+      @c.receive_line(command)
+      @c.sent_data.strip.should eql("257 \"/files\" is the current directory")
+    end
   end
 end
 
-context FTPServer, "PASS" do
+describe FTPServer, "RETR" do
   before(:each) do
     @c = FTPServer.new(nil)
-  end
-
-  specify "should respond with 202 when called by logged in user" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("PASS 1234")
-    @c.sent_data.should match(/202.+/)
-  end
-
-  specify "should respond with 553 when called with no param" do
-    @c.receive_line("USER test")
-    @c.reset_sent!
-    @c.receive_line("PASS")
-    @c.sent_data.should match(/553.+/)
-  end
-
-  specify "should respond with 530 when called without first providing a username" do
-    @c.reset_sent!
-    @c.receive_line("PASS 1234")
-    @c.sent_data.should match(/530.+/)
-  end
-
-end
-
-context FTPServer, "RETR" do
-  before(:each) do
-    @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
 
   specify "should respond with 553 when called with no param" do
@@ -584,6 +621,7 @@ context FTPServer, "RETR" do
   end
 
   specify "should always respond with 551 when called with an invalid file" do
+    @c.stub!(:get_file).and_return(false)
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -593,6 +631,7 @@ context FTPServer, "RETR" do
   end
 
   specify "should always respond with 150..226 when called with valid file" do
+    @c.stub!(:get_file).and_return('blah')
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -602,6 +641,7 @@ context FTPServer, "RETR" do
   end
 
   specify "should always respond with 150..226 when called outside files dir with appropriate param" do
+    @c.stub!(:get_file).and_return('blah')
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -611,7 +651,7 @@ context FTPServer, "RETR" do
   end
 end
 
-context FTPServer, "REST" do
+describe FTPServer, "REST" do
   before(:each) do
     @c = FTPServer.new(nil)
   end
@@ -623,43 +663,127 @@ context FTPServer, "REST" do
   end
 end
 
-context FTPServer, "RMD" do
-  before(:each) do
-    @c = FTPServer.new(nil)
-  end
+%w(RMD XRMD).each do |command|
+  describe FTPServer, command do
+    before(:each) do
+      @c = FTPServer.new(nil)
+      @c.stub!(:authenticate).and_return(true)
+    end
 
-  specify "should always respond with 550 when called" do
-    @c.reset_sent!
-    @c.receive_line("RMD")
-    @c.sent_data.should match(/550.+/)
+    specify "should respond with 530 if user is not logged in" do
+      @c.reset_sent!
+      @c.receive_line("#{command} x")
+      @c.sent_data.should match(/530.*/)
+    end
+
+    it "should respond with 553 when the paramater is omitted" do
+      @c.stub!(:delete_dir).and_return(true)
+      @c.receive_line("USER test")
+      @c.receive_line("PASS 1234")
+      @c.reset_sent!
+      @c.reset_sent!
+      @c.receive_line("#{command}")
+      @c.sent_data.should match(/553.+/)
+    end
+
+    it "should respond with 250 when the directory is deleted" do
+      @c.stub!(:delete_dir).and_return(true)
+      @c.receive_line("USER test")
+      @c.receive_line("PASS 1234")
+      @c.reset_sent!
+      @c.reset_sent!
+      @c.receive_line("#{command} x")
+      @c.sent_data.should match(/250.+/)
+    end
+
+    it "should respond with 550 when the directory is not deleted" do
+      @c.stub!(:delete_dir).and_return(false)
+      @c.receive_line("USER test")
+      @c.receive_line("PASS 1234")
+      @c.reset_sent!
+      @c.reset_sent!
+      @c.receive_line("#{command} x")
+      @c.sent_data.should match(/550.+/)
+    end
   end
 end
 
-context FTPServer, "RNFR" do
+describe FTPServer, "RNFR" do
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
 
-  specify "should always respond with 550 when called" do
+  specify "should respond with 530 if user is not logged in" do
+    @c.reset_sent!
+    @c.receive_line("RNFR x")
+    @c.sent_data.should match(/530.*/)
+  end
+
+  it "should respond with 553 when the paramater is omitted" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("RNFR")
-    @c.sent_data.should match(/550.+/)
+    @c.sent_data.should match(/553.+/)
+  end
+
+  specify "should always respond with 350 when called" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("RNFR x")
+    @c.sent_data.should match(/350.+/)
   end
 end
 
-context FTPServer, "RNTO" do
+describe FTPServer, "RNTO" do
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
 
-  specify "should always respond with 550 when called" do
+  specify "should respond with 530 if user is not logged in" do
+    @c.reset_sent!
+    @c.receive_line("RNTO x")
+    @c.sent_data.should match(/530.*/)
+  end
+
+  it "should respond with 553 when the paramater is omitted" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("RNTO")
+    @c.sent_data.should match(/553.+/)
+  end
+
+  it "should respond with XXX when the RNFR command is omitted"
+
+  it "should respond with 250 when the file is renamed" do
+    @c.stub!(:rename).and_return(true)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.reset_sent!
+    @c.receive_line("RNFR x")
+    @c.receive_line("RNTO x")
+    @c.sent_data.should match(/250.+/)
+  end
+
+  it "should respond with 550 when the file is not renamed" do
+    @c.stub!(:rename).and_return(false)
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.reset_sent!
+    @c.receive_line("RNFR x")
+    @c.receive_line("RNTO x")
     @c.sent_data.should match(/550.+/)
   end
+
 end
 
-context FTPServer, "QUIT" do
+describe FTPServer, "QUIT" do
   before(:each) do
     @c = FTPServer.new(nil)
   end
@@ -671,11 +795,11 @@ context FTPServer, "QUIT" do
   end
 end
 
-
-context FTPServer, "SIZE" do
+describe FTPServer, "SIZE" do
 
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
 
   specify "should always respond with 530 when called by a non logged in user" do
@@ -708,29 +832,17 @@ context FTPServer, "SIZE" do
     @c.sent_data.should match(/450.+/)
   end
 
-  specify "should always respond with 213 when called with a valid file param" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("CWD outgoing")
-    @c.reset_sent!
-    @c.receive_line("SIZE one.txt")
-    @c.sent_data.strip.should eql("213 56")
-  end
+  specify "should always respond with 213 when called with a valid file param"
 
-  specify "should always respond with 213 when called with a valid file param" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("SIZE files/two.txt")
-    @c.sent_data.strip.should eql("213 40")
-  end
+  specify "should always respond with 213 when called with a valid file param"
 end
 
 # TODO STOR
 
-context FTPServer, "STRU" do
+describe FTPServer, "STRU" do
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
   specify "should respond with 553 when called with no param" do
     @c.receive_line("USER test")
@@ -763,9 +875,10 @@ context FTPServer, "STRU" do
   end
 end
 
-context FTPServer, "SYST" do
+describe FTPServer, "SYST" do
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
 
   specify "should respond with 530 when called by non-logged in user" do
@@ -786,9 +899,10 @@ context FTPServer, "SYST" do
 
 end
 
-context FTPServer, "TYPE" do
+describe FTPServer, "TYPE" do
   before(:each) do
     @c = FTPServer.new(nil)
+    @c.stub!(:authenticate).and_return(true)
   end
 
   specify "should respond with 530 when called by non-logged in user" do
@@ -833,96 +947,3 @@ context FTPServer, "TYPE" do
 
 end
 
-context FTPServer, "USER" do
-
-  before(:each) do
-    @c = FTPServer.new(nil)
-  end
-
-  specify "should respond with 331 when called by non-logged in user" do
-    @c.reset_sent!
-    @c.receive_line("USER jh")
-    @c.sent_data.should match(/331.+/)
-  end
-
-  specify "should respond with 500 when called by a logged in user" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("USER test")
-    @c.sent_data.should match(/500.+/)
-  end
-
-end
-
-context FTPServer, "XCUP" do
-  before(:each) do
-    @c = FTPServer.new(nil)
-  end
-
-  specify "should respond with 530 if user is not logged in" do
-    @c.reset_sent!
-    @c.receive_line("XCUP")
-    @c.sent_data.should match(/530.*/)
-  end
-
-  specify "should respond with 250 if called from users home" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("XCUP")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/")
-  end
-
-  specify "should respond with 250 if called from files dir" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("CWD files")
-    @c.reset_sent!
-    @c.receive_line("XCUP")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/")
-  end
-end
-
-context FTPServer, "XPWD" do
-  before(:each) do
-    @c = FTPServer.new(nil)
-  end
-
-  specify "should always respond with 550 (permission denied) when called by non-logged in user" do
-    @c.reset_sent!
-    @c.receive_line("XPWD")
-    @c.sent_data.should match(/530.+/)
-  end
-
-  specify "should always respond with 257 \"/\" when called from root dir" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.reset_sent!
-    @c.receive_line("XPWD")
-    @c.sent_data.strip.should eql("257 \"/\" is the current directory")
-  end
-
-  specify "should always respond with 257 \"/files\" when called from incoming dir" do
-    @c.receive_line("USER test")
-    @c.receive_line("PASS 1234")
-    @c.receive_line("CWD files")
-    @c.reset_sent!
-    @c.receive_line("XPWD")
-    @c.sent_data.strip.should eql("257 \"/files\" is the current directory")
-  end
-end
-
-context FTPServer, "XRMD" do
-  before(:each) do
-    @c = FTPServer.new(nil)
-  end
-
-  specify "should always respond with 550 when called" do
-    @c.reset_sent!
-    @c.receive_line("XRMD")
-    @c.sent_data.should match(/550.+/)
-  end
-end

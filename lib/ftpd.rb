@@ -1,34 +1,29 @@
-# coding: utf-8
-
 require 'rubygems'
 gem 'eventmachine', '>=0.12.8'
 require 'eventmachine'
 require 'socket'
 require 'stringio'
 
-# A demo FTP server, built on top of the EventMacine gem.
-#
-# This isn't a useful FTP server. It has hard coded authentication and an
-# emulated directory structure. I hope it serves as a useful piece of sample code
-# regardless. See the README for more info.
-#
-# license: MIT License // http://www.opensource.org/licenses/mit-license.php
-# copyright: (c) 2006 James Healy
-#
+require 'authentication'
+require 'directories'
+require 'files'
+require 'directory_item'
+
 class FTPServer < EM::Protocols::LineAndTextProtocol
 
   LBRK = "\r\n"
+
+  include Authentication
+  include Directories
+  include Files
+
   COMMANDS = %w[quit type user retr stor port cdup cwd dele rmd pwd list size
                 syst mkd pass xcup xpwd xcwd xrmd rest allo nlst pasv allo help
                 noop mode rnfr rnto stru]
-  FILE_ONE = "This is the first file available for download.\n\nBy James"
-  FILE_TWO = "This is the file number two.\n\n2009-03-21"
+
   attr_reader :root, :name_prefix
   attr_accessor :datasocket
 
-  # callback recognised by EventMachine that is called when a new connection
-  # is initiated
-  #
   def post_init
     @mode   = :binary
     @name_prefix = "/"
@@ -36,26 +31,24 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     send_response "220 FTP server (rftpd) ready"
   end
 
-  # I used to implement the standard receive_data callback, then buffer data
-  # until I had a complete line. Now I just base my server on the
-  # LineAndTextProtocol class that is distributed with EM. It handles the
-  # buffering for me and calls this receive_line() method once the line is
-  # complete
-  #
   def receive_line(str)
-    # break the request into command and parameter components
-    cmd, param = parse_request(str)
+    Fiber.new do
+      cmd, param = parse_request(str)
 
-    # if the command is contained in the whitelist, and there is a method
-    # to handle it, call it. Otherwise send an appropriate response to the
-    # client
-    puts
-    puts "Request : #{cmd}(#{param})"
-    if COMMANDS.include?(cmd) && self.respond_to?("cmd_#{cmd}".to_sym, true)
-      self.__send__("cmd_#{cmd}".to_sym, param)
-    else
-      bad_command(cmd, param)
-    end
+      # if the command is contained in the whitelist, and there is a method
+      # to handle it, call it. Otherwise send an appropriate response to the
+      # client
+      if COMMANDS.include?(cmd) && self.respond_to?("cmd_#{cmd}".to_sym, true)
+        begin
+          self.__send__("cmd_#{cmd}".to_sym, param)
+        rescue Exception => err
+          puts "#{err.class}: #{err}"
+          puts err.backtrace.join("\n")
+        end
+      else
+        send_response "500 Sorry, I don't understand #{cmd.upcase}"
+      end
+    end.resume
   end
 
   private
@@ -63,7 +56,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   def build_path(filename = nil)
     if filename && filename[0,1] == "/"
       path = File.expand_path(filename)
-    elsif filename
+    elsif filename && filename != '-a'
       path = File.expand_path("#{@name_prefix}/#{filename}")
     else
       path = File.expand_path(@name_prefix)
@@ -84,16 +77,10 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
       param = nil
     end
 
-    return cmd.downcase, param
+    [cmd.downcase, param]
   end
 
 
-  # respond to an unrecognised request
-  def bad_command(cmd, param)
-    send_response "500 Sorry, I don't understand #{cmd.upcase}"
-  end
-
-  # close the datasocket this connection is using
   def close_datasocket
     if @datasocket
       @datasocket.close_connection_after_writing
@@ -107,41 +94,8 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     end
   end
 
-  # handle the deprecated ALLO FTP command.
   def cmd_allo(param)
-    send_response "200"
-  end
-
-  # go up a directory, really just an alias
-  def cmd_cdup(param)
-    send_unauthorised and return unless logged_in?
-    cmd_cwd("..")
-  end
-
-  # As per RFC1123, XCUP is a synonym for CDUP
-  alias cmd_xcup cmd_cdup
-
-  # change directory
-  def cmd_cwd(param)
-    send_unauthorised and return unless logged_in?
-    path = build_path(param)
-
-    puts "************* '#{path}"
-    case path
-    when "/", "/files"
-      @name_prefix = path
-      send_response "250 Directory changed to #{path}"
-    else
-      send_response "550 Directory not found"
-    end
-  end
-
-  # As per RFC1123, XCWD is a synonym for CWD
-  alias cmd_xcwd cmd_cwd
-
-  # delete a file
-  def cmd_dele(param)
-    send_permission_denied
+    send_response "202 Obsolete"
   end
 
   # handle the HELP FTP command by sending a list of available commands.
@@ -160,10 +114,6 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     send_response str, true
   end
 
-  # make directory
-  def cmd_mkd(param)
-    send_permission_denied
-  end
 
   # the original FTP spec had various options for hosts to negotiate how data
   # would be sent over the data socket, In reality these days (S)tream mode
@@ -180,72 +130,11 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     end
   end
 
-  # return a listing of the current directory, one per line, each line
-  # separated by the standard FTP EOL sequence. The listing is returned
-  # to the client over a data socket.
-  #
-  def cmd_nlst(param)
-    send_unauthorised and return unless logged_in?
-    send_response "150 Opening ASCII mode data connection for file list"
-
-    case build_path(param)
-    when "/"
-      files = %w[. .. files one.txt]
-    when "/files"
-      files = %w[. .. two.txt]
-    end
-
-    send_outofband_data(files.join(LBRK) << LBRK)
-  end
-
-  # return a detailed list of files and directories, seperated by the
-  # FTP line break sequence
-  def cmd_list(param)
-    send_unauthorised and return unless logged_in?
-    send_response "150 Opening ASCII mode data connection for file list"
-
-    timestr = Time.now.strftime("%b %d %H:%M")
-    lines = []
-    lines << "drwxr-xr-x 1 owner group            0 #{timestr} ."
-    lines << "drwxr-xr-x 1 owner group            0 #{timestr} .."
-
-    path = build_path(param)
-    case path
-    when "/"
-      lines << "drwxr-xr-x 1 owner group            0 #{timestr} files"
-      lines << "-rwxr-xr-x 1 owner group#{FILE_ONE.size.to_s.rjust(13)} #{timestr} one.txt"
-    when "/files"
-      lines << "-rwxr-xr-x 1 owner group#{FILE_TWO.size.to_s.rjust(13)} #{timestr} two.txt"
-    end
-
-    send_outofband_data(lines.join(LBRK) << LBRK)
-  end
 
   # handle the NOOP FTP command. This is essentially a ping from the client
   # so we just respond with an empty 200 message.
   def cmd_noop(param)
     send_response "200"
-  end
-
-  # handle the PASS FTP command. This is the second stage of a user logging in
-  def cmd_pass(param)
-    send_response "202 User already logged in" and return if @user
-    send_param_required and return if param.nil?
-    send_response "530 password with no username" and return if @requested_user.nil?
-
-    # return an error message if:
-    #  - the specified username isn't in our system
-    #  - the password is wrong
-    if @requested_user != "test" || param != "1234"
-      @user = nil
-      send_response "530 incorrect login. not logged in."
-      return
-    end
-
-    @name_prefix = "/"
-    @user = @requested_user
-    @requested_user = nil
-    send_response "230 OK, password correct"
   end
 
   # Passive FTP. At the clients request, listen on a port for an incoming
@@ -296,58 +185,7 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     send_response "425 Data connection failed"
   end
 
-  # return the current directory
-  def cmd_pwd(param)
-    send_unauthorised and return unless logged_in?
-    send_response "257 \"#{@name_prefix}\" is the current directory"
-  end
 
-  # As per RFC1123, XPWD is a synonym for PWD
-  alias cmd_xpwd cmd_pwd
-
-  # resume downloads
-  def cmd_rest(param)
-    send_response "500 Feature not implemented"
-  end
-
-  # send a file to the client
-  def cmd_retr(param)
-    send_unauthorised and return unless logged_in?
-    send_param_required and return if param.nil?
-
-    path = build_path(param)
-
-    # if file exists, send it to the client
-    case path
-    when "/one.txt"
-      send_response "150 Data transfer starting"
-      send_outofband_data(FILE_ONE)
-    when "/files/two.txt"
-      send_response "150 Data transfer starting"
-      send_outofband_data(FILE_TWO)
-    else
-      # otherwise, inform the user the file doesn't exist
-      send_response "551 file not available"
-    end
-  end
-
-  # delete a directory
-  def cmd_rmd(param)
-    send_permission_denied
-  end
-
-  # As per RFC1123, XRMD is a synonym for RMD
-  alias cmd_xrmd cmd_rmd
-
-  # rename a file
-  def cmd_rnfr(param)
-    send_permission_denied
-  end
-
-  # rename a file
-  def cmd_rnto(param)
-    send_permission_denied
-  end
 
   # handle the QUIT FTP command by closing the connection
   def cmd_quit(param)
@@ -356,37 +194,6 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     close_connection_after_writing
   end
 
-  # return the size of a file in bytes
-  def cmd_size(param)
-    # safety checks to make sure clients can't request files they're
-    # not allowed to
-    send_unauthorised and return unless logged_in?
-    send_param_required and return if param.nil?
-
-    path = build_path(param)
-
-    # if file exists, send it to the client
-    if path == "/one.txt"
-      send_response "213 #{FILE_ONE.size}"
-    elsif path == "/files/two.txt"
-      send_response "213 #{FILE_TWO.size}"
-    else
-      # otherwise, inform the user the file doesn't exist
-      send_response "450 file not available"
-    end
-  end
-
-  # save a file from a client
-  def cmd_stor(param)
-    send_unauthorised and return unless logged_in?
-    send_param_required and return if param.nil?
-
-    # let the client know we're ready to start
-    send_response "150 Data transfer starting"
-
-    filename = build_path(param)
-    receive_outofband_data(filename)
-  end
 
   # like the MODE and TYPE commands, stru[cture] dates back to a time when the FTP
   # protocol was more aware of the content of the files it was transferring, and
@@ -430,15 +237,6 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     end
   end
 
-  # handle the USER FTP command. This is a user attempting to login.
-  # we simply store the requested user name as an instance variable
-  # and wait for the password to be submitted before doing anything
-  def cmd_user(param)
-    send_param_required and return if param.nil?
-    send_response("500 Already logged in") and return if @user
-    @requested_user = param
-    send_response "331 OK, password required"
-  end
 
   # send data to the client across the data socket.
   #
@@ -462,6 +260,9 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
       return
     end
 
+    if data.is_a?(Array)
+      data = data.join(LBRK) << LBRK
+    end
     data = StringIO.new(data) if data.kind_of?(String)
     begin
       bytes = 0
@@ -484,32 +285,37 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   # If this happens, exit the method early and try again later. See the method
   # comments to send_outofband_data for further explanation.
   #
-  def receive_outofband_data(filename, interval = 0.1)
-    if @datasocket.nil? && interval < 25
-      EventMachine.add_timer(interval) { receive_outofband_data(filename, interval * 2)}
-      return
-    elsif @datasocket.nil?
-      send_response "425 Error establishing connection"
+  def receive_outofband_data(fiber = nil)
+    fiber = Fiber.current
+
+    10.times do |i|
+      if @datasocket.nil? && interval < 25
+        EventMachine.add_timer(0.1 * (i + 1) ** 2) { fiber.resume }
+        Fiber.yield
+      else
+        break
+      end
     end
 
-    # the client is going to spit some data at us over the data socket. Add
-    # a callback that will execute when the client closes the socket. We more
-    # or less just send an ACK back over the control port
-    @datasocket.callback do |data|
-      # Since we're emulating a directory structure, don't actually save the
-      # file.
-      #File.open(filename, 'w') do |file|
-      #  file.write data
-      #  send_response "200 OK, received #{data.size} bytes"
-      #end
-      send_response "200 OK, received #{data.size} bytes"
+    if @datasocket.nil?
+      send_response "425 Error establishing connection"
+      return false
     end
+
+    # let the client know we're ready to start
+    send_response "150 Data transfer starting"
+
+    fiber = Fiber.current # not sure why we have to do this again, but it's required
+    @datasocket.callback do |data|
+      send_response "200 OK, received #{data.size} bytes"
+      fiber.resume(data)
+    end
+    Fiber.yield
   end
 
   # all responses from an FTP server end with \r\n, so wrap the
   # send_data callback
   def send_response(msg, no_linebreak = false)
-    puts msg
     msg += LBRK unless no_linebreak
     send_data msg
   end
@@ -522,6 +328,10 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     send_response "550 Permission denied"
   end
 
+  def send_action_not_taken
+    send_response "550 Action not taken"
+  end
+
   def send_illegal_params
     send_response "553 action aborted, illegal params"
   end
@@ -530,9 +340,6 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
     send_response "530 Not logged in"
   end
 
-  def logged_in?
-    @user ? true : false
-  end
 end
 
 # An eventmachine module for connecting to a remote
@@ -596,36 +403,3 @@ class FTPPassiveDataSocket < EventMachine::Connection
   end
 end
 
-# if this file was run directly, spin up eventmachine on port 21
-if $0 == __FILE__
-
-  # signal handling, ensure we exit gracefully
-  trap "SIGCLD", "IGNORE"
-  trap "INT" do
-    puts "exiting..."
-    puts
-    EventMachine::run
-    exit
-  end
-
-  uid, gid = *ARGV
-  uid = uid.to_i if uid
-  gid = gid.to_i if gid
-
-  EventMachine::run do
-    puts "Starting ftp server on 0.0.0.0:21"
-    EventMachine::start_server("0.0.0.0", 21, FTPServer)
-
-    # once the server has spun up, change the owner of process
-    # for security reasons. I don't even trust my own code to
-    # run as root, let alone my code that's running an Internet
-    # visible network service.
-    if gid && Process.gid == 0
-      Process.gid = gid
-    end
-    if uid && Process.euid == 0
-      Process::Sys.setuid(uid)
-    end
-
-  end
-end
