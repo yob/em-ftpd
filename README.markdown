@@ -33,16 +33,6 @@ more detail.
 All suggestions and patches welcome, preferably via a git repository I can pull from.
 If this demo proves useful to you, please let me know.
 
-## Usage
-
-As root (so you can bind to a port < 1024):
-
-    ruby ftpd.rb [uid] [gid]
-
-## Authentication Details
-
-The login details are hard coded. Username: test Password: 1234
-
 ## Further Reading
 
 There are a range of RFCs that together specify the FTP protocol. In chronological
