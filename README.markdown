@@ -15,10 +15,13 @@ This isn't a useful FTP server. It has hard coded authentication and an
 emulated directory structure. I hope it serves as a useful piece of sample code
 regardless.
 
-# Author
+# Authors
 
+Chris Wanstrath <chris@wanstrath.com>
 James Healy <james@yob.id.au>
 [http://www.yob.id.au](http://www.yob.id.au)
+John Nunemaker <nunemaker@gmail.com>
+Elijah Miller <elijah.miller@gmail.com>
 
 ## License
 
