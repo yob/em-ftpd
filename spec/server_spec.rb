@@ -1,89 +1,11 @@
 # coding: utf-8
 
-require 'rubygems'
-require 'rspec'
-$: << '.'
-require 'ftpd'
+require File.dirname(__FILE__) + "/spec_helper"
 
-class FTPServer
-  def send_data(data)
-    sent_data << data
-  end
-
-  def sent_data
-    @sent_data ||= ''
-  end
-
-  def reset_sent!
-    @sent_data = ""
-  end
-
-  def oobdata
-    @oobdata ||= ""
-  end
-  
-  def reset_oobdata!
-    @oobdata = ""
-  end
-
-  def initialize
-    connection_completed
-  end
-
-  # fake the socket data the server is running on. Resolves
-  # to 127.0.0.1
-  def get_sockname
-    if RUBY_PLATFORM =~ /darwin/
-      "\020\002\010\111\177\000\000\001\000\000\000\000\000\000\000\000"
-    elsif RUBY_PLATFORM =~ /linux/
-      "\002\000\000\025\177\000\000\001\000\000\000\000\000\000\000\000"
-    end
-  end
-
-  def close_connection_after_writing
-    true
-  end
-end
-
-class FTPPassiveDataSocket
-  class << self
-    def start(host, control_server)
-      control_server.datasocket = self.new(nil)
-      @@control_server = control_server
-      "12345"
-    end
-
-    def stop(*args)
-      true
-    end
-
-    def get_port(*args)
-      40000
-    end
-  end
-
-  def send_data(data)
-    @@control_server.oobdata << data
-  end
-
-  def sent_data
-    @@control_server.oobdata
-  end
-
-  def reset_sent!
-    @@control_server.reset_oobdata!
-  end
-
-  def close_connection_after_writing
-    true
-  end
-
-end
-
-describe FTPServer, "initialisation" do
+describe EM::FTPD::Server, "initialisation" do
 
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
   specify "should default to a root name_prefix" do
@@ -95,21 +17,20 @@ describe FTPServer, "initialisation" do
   end
 end
 
-describe FTPServer, "ALLO" do
+describe EM::FTPD::Server, "ALLO" do
 
   specify "should always respond with 202 when called" do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.reset_sent!
     @c.receive_line("ALLO")
     @c.sent_data.should match(/^202/)
   end
 end
 
-describe FTPServer, "USER" do
+describe EM::FTPD::Server, "USER" do
 
   before(:each) do
-    @c = FTPServer.new(nil)
-    @c.stub!(:authenticate).and_return(true)
+    @c = EM::FTPD::Server.new(nil,TestDriver.new)
   end
 
   specify "should respond with 331 when called by non-logged in user" do
@@ -128,13 +49,12 @@ describe FTPServer, "USER" do
 
 end
 
-describe FTPServer, "PASS" do
+describe EM::FTPD::Server, "PASS" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
   specify "should respond with 202 when called by logged in user" do
-    @c.stub!(:authenticate).and_return(true)
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -156,28 +76,25 @@ describe FTPServer, "PASS" do
   end
 
   it "should respond with 230 when user is authenticated" do
-    @c.stub!(:authenticate).and_return(true)
     @c.receive_line("USER test")
     @c.reset_sent!
     @c.receive_line("PASS 1234")
     @c.sent_data.should match(/230.+/)
   end
 
-  it "should respond with 530 when user is not authenticated" do
-    @c.stub!(:authenticate).and_return(false)
+  it "should respond with 530 when password is incorrect" do
     @c.receive_line("USER test")
     @c.reset_sent!
-    @c.receive_line("PASS 1234")
+    @c.receive_line("PASS 1235")
     @c.sent_data.should match(/530.+/)
   end
-
 end
 
 %w(CDUP XCUP).each do |command|
 
-  describe FTPServer, command do
+  describe EM::FTPD::Server, command do
     before(:each) do
-      @c = FTPServer.new(nil)
+      @c = EM::FTPD::Server.new(nil, TestDriver.new)
       @c.stub!(:authenticate).and_return(true)
       @c.stub!(:change_dir).and_return(true)
     end
@@ -210,9 +127,9 @@ end
   end
 end
 
-describe FTPServer, "CWD" do
+describe EM::FTPD::Server, "CWD" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
     @c.stub!(:change_dir).and_return(true)
   end
@@ -310,10 +227,9 @@ describe FTPServer, "CWD" do
 
 end
 
-describe FTPServer, "DELE" do
+describe EM::FTPD::Server, "DELE" do
   before(:each) do
-    @c = FTPServer.new(nil)
-    @c.stub!(:authenticate).and_return(true)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
   specify "should respond with 530 if user is not logged in" do
@@ -323,7 +239,6 @@ describe FTPServer, "DELE" do
   end
 
   it "should respond with 553 when the paramater is omitted" do
-    @c.stub!(:delete_file).and_return(true)
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -333,30 +248,28 @@ describe FTPServer, "DELE" do
   end
 
   it "should respond with 250 when the file is deleted" do
-    @c.stub!(:delete_file).and_return(true)
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.reset_sent!
-    @c.receive_line("DELE x")
+    @c.receive_line("DELE four.txt")
     @c.sent_data.should match(/250.+/)
   end
 
   it "should respond with 550 when the file is not deleted" do
-    @c.stub!(:delete_file).and_return(false)
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.reset_sent!
-    @c.receive_line("DELE x")
+    @c.receive_line("DELE one.txt")
     @c.sent_data.should match(/550.+/)
   end
 
 end
 
-describe FTPServer, "HELP" do
+describe EM::FTPD::Server, "HELP" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
   specify "should always respond with 214 when called" do
     @c.reset_sent!
@@ -365,30 +278,11 @@ describe FTPServer, "HELP" do
   end
 end
 
-describe FTPServer, "LIST" do
+describe EM::FTPD::Server, "LIST" do
   # TODO: nlist
 
   before(:each) do
-    now = Time.now
-    timestr = now.strftime("%b %d %H:%M")
-    @files = [DirectoryItem.new(
-      :directory => true,
-      :permissions => 'rwxr-xr-x',
-      :owner => 'owner',
-      :group => 'group',
-      :size => 0,
-      :time => now,
-      :name => 'something',
-    )]
-    @files_output = [
-      "drwxrwxrwx 1 owner group            0 #{timestr} .",
-      "drwxrwxrwx 1 owner group            0 #{timestr} ..",
-      "drwxr-xr-x 1 owner group            0 #{timestr} something",
-    ]
-    @c = FTPServer.new(nil)
-    @c.stub!(:authenticate).and_return(true)
-    @c.stub!(:dir_contents).and_return(@files)
-    @c.stub!(:change_dir).and_return(true)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
   specify "should respond with 530 when called by non-logged in user" do
@@ -412,7 +306,7 @@ describe FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
+    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(@files_output)
   end
 
   specify "should respond with 150 ... 226 when called in the files dir with no param" do
@@ -423,11 +317,11 @@ describe FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
+    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(@files_output)
   end
-  
+
   specify "should respond with 150 ... 226 when called in the files dir with wildcard (LIST *.txt)"
-  
+
   specify "should respond with 150 ... 226 when called in the subdir with .. param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -436,9 +330,9 @@ describe FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST ..")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
+    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(@files_output)
   end
-  
+
   specify "should respond with 150 ... 226 when called in the subdir with / param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -447,9 +341,9 @@ describe FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST /")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
+    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(@files_output)
   end
-  
+
   specify "should respond with 150 ... 226 when called in the root with files param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -457,9 +351,9 @@ describe FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST files")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
+    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(@files_output)
   end
-  
+
   specify "should respond with 150 ... 226 when called in the root with files/ param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
@@ -467,16 +361,16 @@ describe FTPServer, "LIST" do
     @c.reset_sent!
     @c.receive_line("LIST files/")
     @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(FTPServer::LBRK).should eql(@files_output)
+    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(@files_output)
   end
 
   it "should properly list subdirs etc."
 
 end
 
-describe FTPServer, "MKD" do
+describe EM::FTPD::Server, "MKD" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
 
@@ -516,9 +410,9 @@ describe FTPServer, "MKD" do
 
 end
 
-describe FTPServer, "MODE" do
+describe EM::FTPD::Server, "MODE" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
 
@@ -553,9 +447,9 @@ describe FTPServer, "MODE" do
   end
 end
 
-describe FTPServer, "NOOP" do
+describe EM::FTPD::Server, "NOOP" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
   specify "should always respond with 202 when called" do
@@ -568,13 +462,13 @@ end
 # TODO PASV
 
 %w(PWD XPWD).each do |command|
-  describe FTPServer, command do
+  describe EM::FTPD::Server, command do
     before(:each) do
-      @c = FTPServer.new(nil)
+      @c = EM::FTPD::Server.new(nil, TestDriver.new)
       @c.stub!(:authenticate).and_return(true)
       @c.stub!(:change_dir).and_return(true)
     end
-    
+
     specify "should always respond with 550 (permission denied) when called by non-logged in user" do
       @c.reset_sent!
       @c.receive_line(command)
@@ -600,9 +494,9 @@ end
   end
 end
 
-describe FTPServer, "RETR" do
+describe EM::FTPD::Server, "RETR" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
 
@@ -651,9 +545,9 @@ describe FTPServer, "RETR" do
   end
 end
 
-describe FTPServer, "REST" do
+describe EM::FTPD::Server, "REST" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
   specify "should always respond with 500 when called" do
@@ -664,9 +558,9 @@ describe FTPServer, "REST" do
 end
 
 %w(RMD XRMD).each do |command|
-  describe FTPServer, command do
+  describe EM::FTPD::Server, command do
     before(:each) do
-      @c = FTPServer.new(nil)
+      @c = EM::FTPD::Server.new(nil, TestDriver.new)
       @c.stub!(:authenticate).and_return(true)
     end
 
@@ -708,9 +602,9 @@ end
   end
 end
 
-describe FTPServer, "RNFR" do
+describe EM::FTPD::Server, "RNFR" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
 
@@ -737,9 +631,9 @@ describe FTPServer, "RNFR" do
   end
 end
 
-describe FTPServer, "RNTO" do
+describe EM::FTPD::Server, "RNTO" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
 
@@ -783,9 +677,9 @@ describe FTPServer, "RNTO" do
 
 end
 
-describe FTPServer, "QUIT" do
+describe EM::FTPD::Server, "QUIT" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
   specify "should always respond with 221 when called" do
@@ -795,10 +689,10 @@ describe FTPServer, "QUIT" do
   end
 end
 
-describe FTPServer, "SIZE" do
+describe EM::FTPD::Server, "SIZE" do
 
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
 
@@ -839,9 +733,9 @@ end
 
 # TODO STOR
 
-describe FTPServer, "STRU" do
+describe EM::FTPD::Server, "STRU" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
   specify "should respond with 553 when called with no param" do
@@ -875,9 +769,9 @@ describe FTPServer, "STRU" do
   end
 end
 
-describe FTPServer, "SYST" do
+describe EM::FTPD::Server, "SYST" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
 
@@ -899,9 +793,9 @@ describe FTPServer, "SYST" do
 
 end
 
-describe FTPServer, "TYPE" do
+describe EM::FTPD::Server, "TYPE" do
   before(:each) do
-    @c = FTPServer.new(nil)
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.stub!(:authenticate).and_return(true)
   end
 

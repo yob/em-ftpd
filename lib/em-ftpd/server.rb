@@ -18,7 +18,6 @@ module EM::FTPD
     attr_accessor :datasocket
 
     def initialize(driver)
-      super
       @driver = driver
     end
 
