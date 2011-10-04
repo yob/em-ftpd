@@ -62,14 +62,6 @@ class FakeFTPDriver
     false
   end
 
-  def move_file(from, to)
-    false
-  end
-
-  def move_dir(from, to)
-    false
-  end
-
   def rename(from, to)
     false
   end
