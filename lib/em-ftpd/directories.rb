@@ -74,9 +74,10 @@ module EM::FTPD
       now = Time.now
 
       items = list_dir(build_path(param))
-      lines = items.map do |item|
-        "#{item.directory ? 'd' : '-'}#{item.permissions || 'rwxrwxrwx'} 1 #{item.owner || 'owner'} #{item.group || 'group'}            #{item.size || 0} #{(item.time || now).strftime("%b %d %H:%M")} #{item.name}"
-      end
+      lines = items.map { |item|
+        sizestr = (item.size || 0).to_s.rjust(12)
+        "#{item.directory ? 'd' : '-'}#{item.permissions || 'rwxrwxrwx'} 1 #{item.owner || 'owner'} #{item.group || 'group'} #{sizestr} #{(item.time || now).strftime("%b %d %H:%M")} #{item.name}"
+      }
       send_outofband_data(lines)
       # send_action_not_taken
     end

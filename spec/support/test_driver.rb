@@ -62,11 +62,11 @@ class TestDriver
   private
 
   def dir_item(name)
-    EM::FTPD::DirectoryItem.new(:name => name, :directory => true, :size => 0)
+    EM::FTPD::DirectoryItem.new(:name => name, :directory => true, :size => 0, :permissions => "rwxr-xr-x")
   end
 
   def file_item(name, bytes)
-    EM::FTPD::DirectoryItem.new(:name => name, :directory => false, :size => bytes)
+    EM::FTPD::DirectoryItem.new(:name => name, :directory => false, :size => bytes, :permissions => "rwxr-xr-x")
   end
 
 end
