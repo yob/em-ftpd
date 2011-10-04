@@ -8,18 +8,18 @@ describe EM::FTPD::Server, "initialisation" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should default to a root name_prefix" do
+  it "should default to a root name_prefix" do
     @c.name_prefix.should eql("/")
   end
 
-  specify "should respond with 220 when connection is opened" do
+  it "should respond with 220 when connection is opened" do
     @c.sent_data.should match(/^220/)
   end
 end
 
 describe EM::FTPD::Server, "ALLO" do
 
-  specify "should always respond with 202 when called" do
+  it "should always respond with 202 when called" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.reset_sent!
     @c.receive_line("ALLO")
@@ -33,13 +33,13 @@ describe EM::FTPD::Server, "USER" do
     @c = EM::FTPD::Server.new(nil,TestDriver.new)
   end
 
-  specify "should respond with 331 when called by non-logged in user" do
+  it "should respond with 331 when called by non-logged in user" do
     @c.reset_sent!
     @c.receive_line("USER jh")
     @c.sent_data.should match(/331.+/)
   end
 
-  specify "should respond with 500 when called by a logged in user" do
+  it "should respond with 500 when called by a logged in user" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -54,7 +54,7 @@ describe EM::FTPD::Server, "PASS" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 202 when called by logged in user" do
+  it "should respond with 202 when called by logged in user" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -62,14 +62,14 @@ describe EM::FTPD::Server, "PASS" do
     @c.sent_data.should match(/202.+/)
   end
 
-  specify "should respond with 553 when called with no param" do
+  it "should respond with 553 when called with no param" do
     @c.receive_line("USER test")
     @c.reset_sent!
     @c.receive_line("PASS")
     @c.sent_data.should match(/553.+/)
   end
 
-  specify "should respond with 530 when called without first providing a username" do
+  it "should respond with 530 when called without first providing a username" do
     @c.reset_sent!
     @c.receive_line("PASS 1234")
     @c.sent_data.should match(/530.+/)
@@ -97,14 +97,14 @@ end
       @c = EM::FTPD::Server.new(nil, TestDriver.new)
     end
 
-    specify "should respond with 530 if user is not logged in" do
+    it "should respond with 530 if user is not logged in" do
       @c.reset_sent!
       @c.receive_line(command)
       @c.sent_data.should match(/530.*/)
       @c.name_prefix.should eql("/")
     end
 
-    specify "should respond with 250 if called from root" do
+    it "should respond with 250 if called from root" do
       @c.receive_line("USER test")
       @c.receive_line("PASS 1234")
       @c.reset_sent!
@@ -113,7 +113,7 @@ end
       @c.name_prefix.should eql("/")
     end
 
-    specify "should respond with 250 if called from incoming dir" do
+    it "should respond with 250 if called from incoming dir" do
       @c.receive_line("USER test")
       @c.receive_line("PASS 1234")
       @c.receive_line("CWD files")
@@ -130,13 +130,13 @@ describe EM::FTPD::Server, "CWD" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 530 if user is not logged in" do
+  it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("CWD")
     @c.sent_data.should match(/530.*/)
   end
 
-  specify "should respond with 250 if called with '..' from users home" do
+  it "should respond with 250 if called with '..' from users home" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -145,7 +145,7 @@ describe EM::FTPD::Server, "CWD" do
     @c.name_prefix.should eql("/")
   end
 
-  specify "should respond with 250 if called with '.' from users home" do
+  it "should respond with 250 if called with '.' from users home" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -154,7 +154,7 @@ describe EM::FTPD::Server, "CWD" do
     @c.name_prefix.should eql("/")
   end
 
-  specify "should respond with 250 if called with '/' from users home" do
+  it "should respond with 250 if called with '/' from users home" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -163,7 +163,7 @@ describe EM::FTPD::Server, "CWD" do
     @c.name_prefix.should eql("/")
   end
 
-  specify "should respond with 250 if called with 'files' from users home" do
+  it "should respond with 250 if called with 'files' from users home" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -172,7 +172,7 @@ describe EM::FTPD::Server, "CWD" do
     @c.name_prefix.should eql("/files")
   end
 
-  specify "should respond with 250 if called with 'files/' from users home" do
+  it "should respond with 250 if called with 'files/' from users home" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -181,7 +181,7 @@ describe EM::FTPD::Server, "CWD" do
     @c.name_prefix.should eql("/files")
   end
 
-  specify "should respond with 250 if called with '/files/' from users home" do
+  it "should respond with 250 if called with '/files/' from users home" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -190,7 +190,7 @@ describe EM::FTPD::Server, "CWD" do
     @c.name_prefix.should eql("/files")
   end
 
-  specify "should respond with 250 if called with '..' from the files dir" do
+  it "should respond with 250 if called with '..' from the files dir" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("CWD files")
@@ -200,7 +200,7 @@ describe EM::FTPD::Server, "CWD" do
     @c.name_prefix.should eql("/")
   end
 
-  specify "should respond with 250 if called with '/files' from the files dir" do
+  it "should respond with 250 if called with '/files' from the files dir" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("CWD files")
@@ -210,7 +210,7 @@ describe EM::FTPD::Server, "CWD" do
     @c.name_prefix.should eql("/files")
   end
 
-  specify "should respond with 550 if called with unrecognised dir" do
+  it "should respond with 550 if called with unrecognised dir" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -227,7 +227,7 @@ describe EM::FTPD::Server, "DELE" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 530 if user is not logged in" do
+  it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("DELE x")
     @c.sent_data.should match(/530.*/)
@@ -266,7 +266,7 @@ describe EM::FTPD::Server, "HELP" do
   before(:each) do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
-  specify "should always respond with 214 when called" do
+  it "should always respond with 214 when called" do
     @c.reset_sent!
     @c.receive_line("HELP")
     @c.sent_data.should match(/214.+/)
@@ -297,13 +297,13 @@ describe EM::FTPD::Server, "LIST" do
     ]
   }
 
-  specify "should respond with 530 when called by non-logged in user" do
+  it "should respond with 530 when called by non-logged in user" do
     @c.reset_sent!
     @c.receive_line("LIST")
     @c.sent_data.should match(/530.+/)
   end
 
-  specify "should respond with 150 ...425  when called with no data socket" do
+  it "should respond with 150 ...425  when called with no data socket" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -311,7 +311,7 @@ describe EM::FTPD::Server, "LIST" do
     @c.sent_data.should match(/150.+425.+/m)
   end
 
-  specify "should respond with 150 ... 226 when called in the root dir with no param" do
+  it "should respond with 150 ... 226 when called in the root dir with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -321,7 +321,7 @@ describe EM::FTPD::Server, "LIST" do
     @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(root_files)
   end
 
-  specify "should respond with 150 ... 226 when called in the files dir with no param" do
+  it "should respond with 150 ... 226 when called in the files dir with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("CWD files")
@@ -332,9 +332,9 @@ describe EM::FTPD::Server, "LIST" do
     @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(dir_files)
   end
 
-  specify "should respond with 150 ... 226 when called in the files dir with wildcard (LIST *.txt)"
+  it "should respond with 150 ... 226 when called in the files dir with wildcard (LIST *.txt)"
 
-  specify "should respond with 150 ... 226 when called in the subdir with .. param" do
+  it "should respond with 150 ... 226 when called in the subdir with .. param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("CWD files")
@@ -345,7 +345,7 @@ describe EM::FTPD::Server, "LIST" do
     @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(root_files)
   end
 
-  specify "should respond with 150 ... 226 when called in the subdir with / param" do
+  it "should respond with 150 ... 226 when called in the subdir with / param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("CWD files")
@@ -356,7 +356,7 @@ describe EM::FTPD::Server, "LIST" do
     @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(root_files)
   end
 
-  specify "should respond with 150 ... 226 when called in the root with files param" do
+  it "should respond with 150 ... 226 when called in the root with files param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -366,7 +366,7 @@ describe EM::FTPD::Server, "LIST" do
     @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(dir_files)
   end
 
-  specify "should respond with 150 ... 226 when called in the root with files/ param" do
+  it "should respond with 150 ... 226 when called in the root with files/ param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -385,7 +385,7 @@ describe EM::FTPD::Server, "MKD" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 530 if user is not logged in" do
+  it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("MKD x")
     @c.sent_data.should match(/530.*/)
@@ -399,7 +399,7 @@ describe EM::FTPD::Server, "MKD" do
     @c.sent_data.should match(/553.+/)
   end
 
-  specify "should respond with 257 when the directory is created" do
+  it "should respond with 257 when the directory is created" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -408,7 +408,7 @@ describe EM::FTPD::Server, "MKD" do
   end
 
 
-  specify "should respond with 550 when the directory is not created" do
+  it "should respond with 550 when the directory is not created" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -423,7 +423,7 @@ describe EM::FTPD::Server, "MODE" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 553 when called with no param" do
+  it "should respond with 553 when called with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -431,13 +431,13 @@ describe EM::FTPD::Server, "MODE" do
     @c.sent_data.should match(/553.+/)
   end
 
-  specify "should always respond with 530 when called by user not logged in" do
+  it "should always respond with 530 when called by user not logged in" do
     @c.reset_sent!
     @c.receive_line("MODE S")
     @c.sent_data.should match(/530.+/)
   end
 
-  specify "should always respond with 200 when called with S param" do
+  it "should always respond with 200 when called with S param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -445,7 +445,7 @@ describe EM::FTPD::Server, "MODE" do
     @c.sent_data.should match(/200.+/)
   end
 
-  specify "should always respond with 504 when called with non-S param" do
+  it "should always respond with 504 when called with non-S param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -459,7 +459,7 @@ describe EM::FTPD::Server, "NOOP" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should always respond with 202 when called" do
+  it "should always respond with 202 when called" do
     @c.reset_sent!
     @c.receive_line("NOOP")
     @c.sent_data.should match(/200.*/)
@@ -474,13 +474,13 @@ end
       @c = EM::FTPD::Server.new(nil, TestDriver.new)
     end
 
-    specify "should always respond with 550 (permission denied) when called by non-logged in user" do
+    it "should always respond with 550 (permission denied) when called by non-logged in user" do
       @c.reset_sent!
       @c.receive_line(command)
       @c.sent_data.should match(/530.+/)
     end
 
-    specify 'should always respond with 257 "/" when called from root dir' do
+    it 'should always respond with 257 "/" when called from root dir' do
       @c.receive_line("USER test")
       @c.receive_line("PASS 1234")
       @c.reset_sent!
@@ -488,7 +488,7 @@ end
       @c.sent_data.strip.should eql('257 "/" is the current directory')
     end
 
-    specify 'should always respond with 257 "/files" when called from files dir' do
+    it 'should always respond with 257 "/files" when called from files dir' do
       @c.receive_line("USER test")
       @c.receive_line("PASS 1234")
       @c.receive_line("CWD files")
@@ -504,7 +504,7 @@ describe EM::FTPD::Server, "RETR" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 553 when called with no param" do
+  it "should respond with 553 when called with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -512,13 +512,13 @@ describe EM::FTPD::Server, "RETR" do
     @c.sent_data.should match(/553.+/)
   end
 
-  specify "should always respond with 530 when called by user not logged in" do
+  it "should always respond with 530 when called by user not logged in" do
     @c.reset_sent!
     @c.receive_line("RETR blah.txt")
     @c.sent_data.should match(/530.+/)
   end
 
-  specify "should always respond with 551 when called with an invalid file" do
+  it "should always respond with 551 when called with an invalid file" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -527,7 +527,7 @@ describe EM::FTPD::Server, "RETR" do
     @c.sent_data.should match(/551.+/)
   end
 
-  specify "should always respond with 150..226 when called with valid file" do
+  it "should always respond with 150..226 when called with valid file" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -536,7 +536,7 @@ describe EM::FTPD::Server, "RETR" do
     @c.sent_data.should match(/150.+226.+/m)
   end
 
-  specify "should always respond with 150..226 when called outside files dir with appropriate param" do
+  it "should always respond with 150..226 when called outside files dir with appropriate param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.receive_line("PASV")
@@ -551,7 +551,7 @@ describe EM::FTPD::Server, "REST" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should always respond with 500 when called" do
+  it "should always respond with 500 when called" do
     @c.reset_sent!
     @c.receive_line("REST")
     @c.sent_data.should match(/500.+/)
@@ -564,7 +564,7 @@ end
       @c = EM::FTPD::Server.new(nil, TestDriver.new)
     end
 
-    specify "should respond with 530 if user is not logged in" do
+    it "should respond with 530 if user is not logged in" do
       @c.reset_sent!
       @c.receive_line("#{command} x")
       @c.sent_data.should match(/530.*/)
@@ -604,7 +604,7 @@ describe EM::FTPD::Server, "RNFR" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 530 if user is not logged in" do
+  it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("RNFR x")
     @c.sent_data.should match(/530.*/)
@@ -618,7 +618,7 @@ describe EM::FTPD::Server, "RNFR" do
     @c.sent_data.should match(/553.+/)
   end
 
-  specify "should always respond with 350 when called" do
+  it "should always respond with 350 when called" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -632,7 +632,7 @@ describe EM::FTPD::Server, "RNTO" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 530 if user is not logged in" do
+  it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("RNTO x")
     @c.sent_data.should match(/530.*/)
@@ -675,7 +675,7 @@ describe EM::FTPD::Server, "QUIT" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should always respond with 221 when called" do
+  it "should always respond with 221 when called" do
     @c.reset_sent!
     @c.receive_line("QUIT")
     @c.sent_data.should match(/221.+/)
@@ -688,13 +688,13 @@ describe EM::FTPD::Server, "SIZE" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should always respond with 530 when called by a non logged in user" do
+  it "should always respond with 530 when called by a non logged in user" do
     @c.reset_sent!
     @c.receive_line("SIZE one.txt")
     @c.sent_data.should match(/530.+/)
   end
 
-  specify "should always respond with 553 when called with no param" do
+  it "should always respond with 553 when called with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -702,7 +702,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.sent_data.should match(/553.+/)
   end
 
-  specify "should always respond with 450 when called with a directory param" do
+  it "should always respond with 450 when called with a directory param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -710,7 +710,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.sent_data.should match(/450.+/)
   end
 
-  specify "should always respond with 450 when called with a non-file param" do
+  it "should always respond with 450 when called with a non-file param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -718,7 +718,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.sent_data.should match(/450.+/)
   end
 
-  specify "should always respond with 213 when called with a valid file param" do
+  it "should always respond with 213 when called with a valid file param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -726,7 +726,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.sent_data.should match(/^213 56/)
   end
 
-  specify "should always respond with 213 when called with a valid file param" do
+  it "should always respond with 213 when called with a valid file param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -741,7 +741,7 @@ describe EM::FTPD::Server, "STRU" do
   before(:each) do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
-  specify "should respond with 553 when called with no param" do
+  it "should respond with 553 when called with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -749,13 +749,13 @@ describe EM::FTPD::Server, "STRU" do
     @c.sent_data.should match(/553.+/)
   end
 
-  specify "should always respond with 530 when called by user not logged in" do
+  it "should always respond with 530 when called by user not logged in" do
     @c.reset_sent!
     @c.receive_line("STRU F")
     @c.sent_data.should match(/530.+/)
   end
 
-  specify "should always respond with 200 when called with F param" do
+  it "should always respond with 200 when called with F param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -763,7 +763,7 @@ describe EM::FTPD::Server, "STRU" do
     @c.sent_data.should match(/200.+/)
   end
 
-  specify "should always respond with 504 when called with non-F param" do
+  it "should always respond with 504 when called with non-F param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -777,13 +777,13 @@ describe EM::FTPD::Server, "SYST" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 530 when called by non-logged in user" do
+  it "should respond with 530 when called by non-logged in user" do
     @c.reset_sent!
     @c.receive_line("SYST")
     @c.sent_data.should match(/530.+/)
   end
 
-  specify "should respond with 215 when called by a logged in user" do
+  it "should respond with 215 when called by a logged in user" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -800,13 +800,13 @@ describe EM::FTPD::Server, "TYPE" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  specify "should respond with 530 when called by non-logged in user" do
+  it "should respond with 530 when called by non-logged in user" do
     @c.reset_sent!
     @c.receive_line("TYPE A")
     @c.sent_data.should match(/530.+/)
   end
 
-  specify "should respond with 553 when called with no param" do
+  it "should respond with 553 when called with no param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -814,7 +814,7 @@ describe EM::FTPD::Server, "TYPE" do
     @c.sent_data.should match(/553.+/)
   end
 
-  specify "should respond with 200 when called with 'A' by a logged in user" do
+  it "should respond with 200 when called with 'A' by a logged in user" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -823,7 +823,7 @@ describe EM::FTPD::Server, "TYPE" do
     @c.sent_data.include?("ASCII").should be_true
   end
 
-  specify "should respond with 200 when called with 'I' by a logged in user" do
+  it "should respond with 200 when called with 'I' by a logged in user" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
@@ -832,7 +832,7 @@ describe EM::FTPD::Server, "TYPE" do
     @c.sent_data.include?("binary").should be_true
   end
 
-  specify "should respond with 500 when called by a logged in user with un unrecognised param" do
+  it "should respond with 500 when called by a logged in user with un unrecognised param" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
