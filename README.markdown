@@ -18,8 +18,7 @@ regardless.
 # Authors
 
 Chris Wanstrath <chris@wanstrath.com>
-James Healy <james@yob.id.au>
-[http://www.yob.id.au](http://www.yob.id.au)
+James Healy <james@yob.id.au> [http://www.yob.id.au](http://www.yob.id.au)
 John Nunemaker <nunemaker@gmail.com>
 Elijah Miller <elijah.miller@gmail.com>
 
