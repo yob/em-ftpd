@@ -19,6 +19,7 @@ module EM::FTPD
 
     def initialize(driver)
       @driver = driver
+      super()
     end
 
     def post_init
