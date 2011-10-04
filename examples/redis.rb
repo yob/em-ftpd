@@ -71,28 +71,6 @@ class RedisFTPDriver
     true
   end
 
-  def move_file(from, to)
-    @redis.rename(file_data_key(from), file_data_key(to))
-    @redis.srem(directory_key(File.dirname(from)), File.basename(from))
-    @redis.sadd(directory_key(File.dirname(to)), File.basename(to))
-  end
-
-  def move_dir(from, to)
-    if @redis.exists(directory_key(from))
-      @redis.rename(directory_key(from), directory_key(to))
-    end
-    @redis.srem(directory_key(File.dirname(from)), File.basename(from) + "/")
-    @redis.sadd(directory_key(File.dirname(to)), File.basename(to) + "/")
-    @redis.keys(directory_key(from + "/*")).each do |key|
-      new_key = directory_key(File.dirname(to)) + key.sub(directory_key(File.dirname(from)), '')
-      @redis.rename(key, new_key)
-    end
-    @redis.keys(file_data_key(from + "/*")).each do |key|
-      new_key = file_data_key(to) + key.sub(file_data_key(from), '/')
-      @redis.rename(key, new_key)
-    end
-  end
-
   def rename(from, to)
     if @redis.sismember(directory_key(File.dirname(from)), File.basename(from))
       move_file(from, to)
@@ -116,6 +94,28 @@ class RedisFTPDriver
 
   def directory_key(path)
     "ftp:dir:#{path}"
+  end
+
+  def move_file(from, to)
+    @redis.rename(file_data_key(from), file_data_key(to))
+    @redis.srem(directory_key(File.dirname(from)), File.basename(from))
+    @redis.sadd(directory_key(File.dirname(to)), File.basename(to))
+  end
+
+  def move_dir(from, to)
+    if @redis.exists(directory_key(from))
+      @redis.rename(directory_key(from), directory_key(to))
+    end
+    @redis.srem(directory_key(File.dirname(from)), File.basename(from) + "/")
+    @redis.sadd(directory_key(File.dirname(to)), File.basename(to) + "/")
+    @redis.keys(directory_key(from + "/*")).each do |key|
+      new_key = directory_key(File.dirname(to)) + key.sub(directory_key(File.dirname(from)), '')
+      @redis.rename(key, new_key)
+    end
+    @redis.keys(file_data_key(from + "/*")).each do |key|
+      new_key = file_data_key(to) + key.sub(file_data_key(from), '/')
+      @redis.rename(key, new_key)
+    end
   end
 
 end
