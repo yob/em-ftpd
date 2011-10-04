@@ -1,19 +1,21 @@
-## ftpd.rb
+## em-ftpd
 
-A demo FTP server, built on top of the EventMacine gem. For a few years I've run
-a low traffic server based on Chris Wanstrath's ftpd.rb. Recently I ported it
-to run on EventMachine, a rewrite that significantly simplified the code.
+A mini-FTP server framework built on top of the EventMacine gem. By providing a
+simple driver class that responds to a handful of methods you can have a
+complete FTP server.
 
-The FTP protocol requires multiple sockets to be opened between the client and server.
-One for the control data, and one for each data transfer. The major challenge
-I found while attempting the rewrite was a lack of EventMachine sample code
-that demonstrated opening multiple, related concurrent sockets. It turned out
-to be a solvable challenge, and I've released this stripped down demo as
-an example for others.
+The library is extracted from real world situations where an FTP interface was
+required to sit in front of a non-filesystem persistence layer.
 
-This isn't a useful FTP server. It has hard coded authentication and an
-emulated directory structure. I hope it serves as a useful piece of sample code
-regardless.
+Some sample use cases include persisting data to:
+
+* an Amazon S3 bucket
+* a relational database
+* redis
+* memory
+
+For some examples that demonstrate redis and memory persistence, check the
+examples/ directory.
 
 # Authors
 
@@ -21,6 +23,11 @@ Chris Wanstrath <chris@wanstrath.com>
 James Healy <james@yob.id.au> [http://www.yob.id.au](http://www.yob.id.au)
 John Nunemaker <nunemaker@gmail.com>
 Elijah Miller <elijah.miller@gmail.com>
+
+## Warning
+
+FTP is an incredibly insecure protocol. Be careful about forcing users to authenticate
+with a username or password that are important.
 
 ## License
 
@@ -30,7 +37,7 @@ more detail.
 ## Contributing
 
 All suggestions and patches welcome, preferably via a git repository I can pull from.
-If this demo proves useful to you, please let me know.
+If this library proves useful to you, please let me know.
 
 ## Further Reading
 
