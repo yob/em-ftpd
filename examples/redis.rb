@@ -13,7 +13,7 @@ Bundler.setup
 
 require 'em-synchrony'
 require 'em-synchrony/em-redis'
-require 'ftpd'
+require 'em-ftpd'
 
 class RedisFTPDriver
 
@@ -30,7 +30,7 @@ class RedisFTPDriver
     files = response.map do |key|
       name, size = key.sub(/ftp:\//, '').sub(%r{/$}, '')
       dir = key.match(%r{/$})
-      DirectoryItem.new(
+      EM::FPD::DirectoryItem.new(
         :name => name,
         :directory => dir,
         :size => size

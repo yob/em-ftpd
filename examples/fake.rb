@@ -12,7 +12,7 @@ require 'bundler'
 
 Bundler.setup
 
-require 'ftpd'
+require 'em-ftpd'
 
 class FakeFTPDriver
   FILE_ONE = "This is the first file available for download.\n\nBy James"
@@ -25,14 +25,9 @@ class FakeFTPDriver
   def dir_contents(path)
     case path
     when "/"      then
-      [
-        DirectoryItem.new(:name => "files", :directory => true, :size => 0),
-        DirectoryItem.new(:name => "one.txt", :directory => false, :size => FILE_ONE.bytesize)
-      ]
+      [ dir_item("files"), file_item("one.txt", FILE_ONE.bytesize) ]
     when "/files" then
-      [
-        DirectoryItem.new(:name => "two.txt", :directory => false, :size => FILE_TWO.bytesize)
-      ]
+      [ file_item("two.txt", FILE_TWO.bytesize) ]
     else
       []
     end
@@ -83,6 +78,16 @@ class FakeFTPDriver
     false
   end
 
+  private
+
+  def dir_item(name)
+    EM::FTPD::DirectoryItem.new(:name => name, :directory => true, :size => 0)
+  end
+
+  def file_item(name, bytes)
+    EM::FTPD::DirectoryItem.new(:name => name, :directory => false, :size => bytes)
+  end
+
 end
 
 # signal handling, ensure we exit gracefully
@@ -96,5 +101,5 @@ end
 
 EM.run do
   puts "Starting ftp server on 0.0.0.0:5555"
-  EventMachine::start_server("0.0.0.0", 5555, FTPServer, FakeFTPDriver.new)
+  EventMachine::start_server("0.0.0.0", 5555, EM::FTPD::Server, FakeFTPDriver.new)
 end
