@@ -1,4 +1,11 @@
-$: << File.join(File.dirname(__FILE__), '..', 'lib')
+# coding: utf-8
+
+# an FTP server that uses redis for persistance.
+#
+# Usage:
+#
+#   ruby -Ilib examples/redis.rb
+
 require 'rubygems'
 require 'bundler'
 
@@ -8,7 +15,7 @@ require 'em-synchrony'
 require 'em-synchrony/em-redis'
 require 'ftpd'
 
-class ExampleFTPServer < FTPServer
+class RedisFTPServer < FTPServer
 
   def file_data_key(path)
     "ftp:data:#{path}"
@@ -119,5 +126,5 @@ end
 EM.synchrony do
   $redis = EM::Protocols::Redis.connect
   puts "Starting ftp server on 0.0.0.0:5555"
-  EventMachine::start_server("0.0.0.0", 5555, ExampleFTPServer)
+  EventMachine::start_server("0.0.0.0", 5555, RedisFTPServer)
 end
