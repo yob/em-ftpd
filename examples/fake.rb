@@ -37,6 +37,15 @@ class FakeFTPDriver
     user == "test" && pass == "1234"
   end
 
+  def bytes(path)
+    case path
+    when "/one.txt"       then FILE_ONE.size
+    when "/files/two.txt" then FILE_TWO.size
+    else
+      false
+    end
+  end
+
   def get_file(path)
     case path
     when "/one.txt"       then FILE_ONE

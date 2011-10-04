@@ -718,9 +718,21 @@ describe EM::FTPD::Server, "SIZE" do
     @c.sent_data.should match(/450.+/)
   end
 
-  specify "should always respond with 213 when called with a valid file param"
+  specify "should always respond with 213 when called with a valid file param" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("SIZE one.txt")
+    @c.sent_data.should match(/^213 56/)
+  end
 
-  specify "should always respond with 213 when called with a valid file param"
+  specify "should always respond with 213 when called with a valid file param" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("SIZE files/two.txt")
+    @c.sent_data.should match(/^213 40/)
+  end
 end
 
 # TODO STOR

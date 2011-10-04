@@ -25,6 +25,10 @@ persistence layer. The driver MUST have the following methods and return types:
   authenticate(user, pass)
   -> boolean indicating if the provided details are valid
 
+  bytes(path)
+  -> an integer with the number of bytes in the file or nil if the file
+     doesn't exist
+
   change_dir(path)
   -> a boolen indicating if the current user is permitted to change to the
      requested path

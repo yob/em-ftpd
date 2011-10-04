@@ -57,20 +57,14 @@ module EM::FTPD
 
     # return the size of a file in bytes
     def cmd_size(param)
-      # safety checks to make sure clients can't request files they're
-      # not allowed to
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      path = build_path(param)
+      bytes = @driver.bytes(build_path(param))
 
-      # if file exists, send it to the client
-      if path == "/one.txt"
-        send_response "213 #{FILE_ONE.size}"
-      elsif path == "/files/two.txt"
-        send_response "213 #{FILE_TWO.size}"
+      if bytes
+        send_response "213 #{bytes}"
       else
-        # otherwise, inform the user the file doesn't exist
         send_response "450 file not available"
       end
     end
