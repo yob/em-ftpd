@@ -1,4 +1,4 @@
-## em-ftpd
+# em-ftpd
 
 A mini-FTP server framework built on top of the EventMacine gem. By providing a
 simple driver class that responds to a handful of methods you can have a
@@ -17,7 +17,44 @@ Some sample use cases include persisting data to:
 For some examples that demonstrate redis and memory persistence, check the
 examples/ directory.
 
-# Authors
+## The Driver Contract
+
+To boot an FTP server you will need to provide a driver that speaks to your
+persistence layer. The driver MUST have the following methods and return types:
+
+  authenticate(user, pass)
+  -> boolean indicating if the provided details are valid
+
+  change_dir(path)
+  -> a boolen indicating if the current user is permitted to change to the
+     requested path
+
+  dir_contents(path)
+  -> an array of the contents of the requested path. Each entry in the array
+     should be EM::FTPD::DirectoryItem-ish
+
+  get_file(path)
+  -> a string with the file contents at the request path or nil if the
+     user isn't permitted to access that path
+
+  can_put_file(path)
+  -> a boolean indicating if the current user is permitted to upload to the
+    requested path
+
+  delete_dir(path)
+  -> a boolean indicating if the directory was successfully deleted
+
+  delete_file(path)
+  -> a boolean indicating if the file was successfully deleted
+
+  rename(from_path, to_path)
+  -> a boolean indicating if the file or directory was successfully renamed
+
+  make_dir(path)
+  -> a boolean indicating if the file or directory was successfully created
+
+
+## Authors
 
 Chris Wanstrath <chris@wanstrath.com>
 James Healy <james@yob.id.au> [http://www.yob.id.au](http://www.yob.id.au)
