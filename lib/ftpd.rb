@@ -24,6 +24,11 @@ class FTPServer < EM::Protocols::LineAndTextProtocol
   attr_reader :root, :name_prefix
   attr_accessor :datasocket
 
+  def initialize(driver)
+    super
+    @driver = driver
+  end
+
   def post_init
     @mode   = :binary
     @name_prefix = "/"
@@ -402,4 +407,3 @@ class FTPPassiveDataSocket < EventMachine::Connection
     self.set_deferred_status :succeeded, data
   end
 end
-

@@ -23,7 +23,7 @@ module Authentication
     #  - the specified username isn't in our system
     #  - the password is wrong
 
-    if authenticate(@requested_user, param)
+    if @driver.authenticate(@requested_user, param)
       @name_prefix = "/"
       @user = @requested_user
       @requested_user = nil

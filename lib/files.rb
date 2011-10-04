@@ -6,7 +6,7 @@ module Files
 
     path = build_path(param)
 
-    if delete_file(path)
+    if @driver.delete_file(path)
       send_response "250 File deleted"
     else
       send_action_not_taken
@@ -25,7 +25,7 @@ module Files
 
     path = build_path(param)
 
-    if data = get_file(path)
+    if data = @driver.get_file(path)
       send_response "150 Data transfer starting #{data.size} bytes"
       send_outofband_data(data)
     else
@@ -47,7 +47,7 @@ module Files
     send_unauthorised and return unless logged_in?
     send_param_required and return if param.nil?
 
-    if rename(@from_filename, build_path(param))
+    if @driver.rename(@from_filename, build_path(param))
       send_response "250 File renamed."
     else
       send_action_not_taken
@@ -81,8 +81,8 @@ module Files
 
     filename = build_path(param)
 
-    if can_put_file(filename)
-      put_file(filename, receive_outofband_data)
+    if @driver.can_put_file(filename)
+      @driver.put_file(filename, receive_outofband_data)
     else
       send_action_not_taken
     end

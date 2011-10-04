@@ -13,8 +13,8 @@ module Directories
   def cmd_cwd(param)
     send_unauthorised and return unless logged_in?
     path = build_path(param)
-    
-    if change_dir(path)
+
+    if @driver.change_dir(path)
       @name_prefix = path
       send_response "250 Directory changed to #{path}"
     else
@@ -30,7 +30,7 @@ module Directories
     send_unauthorised and return unless logged_in?
     send_param_required and return if param.nil?
 
-    if make_dir(build_path(param))
+    if @driver.make_dir(build_path(param))
       send_response "257 Directory created"
     else
       send_action_not_taken
@@ -45,7 +45,7 @@ module Directories
     send_unauthorised and return unless logged_in?
     send_response "150 Opening ASCII mode data connection for file list"
 
-    files = list_dir(build_path(param))
+    files = @driver.list_dir(build_path(param))
     send_outofband_data(files.map { |f| f.name })
   end
 
@@ -58,7 +58,7 @@ module Directories
   end
 
   def list_dir(dir)
-    default_files(dir) + dir_contents(dir)
+    default_files(dir) + @driver.dir_contents(dir)
   end
 
   # return a detailed list of files and directories
@@ -94,7 +94,7 @@ module Directories
     send_unauthorised and return unless logged_in?
     send_param_required and return if param.nil?
 
-    if delete_dir(build_path(param))
+    if @driver.delete_dir(build_path(param))
       send_response "250 Directory deleted."
     else
       send_action_not_taken

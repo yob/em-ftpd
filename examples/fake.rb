@@ -14,7 +14,7 @@ Bundler.setup
 
 require 'ftpd'
 
-class FakeFTPServer < FTPServer
+class FakeFTPDriver
   FILE_ONE = "This is the first file available for download.\n\nBy James"
   FILE_TWO = "This is the file number two.\n\n2009-03-21"
 
@@ -96,5 +96,5 @@ end
 
 EM.run do
   puts "Starting ftp server on 0.0.0.0:5555"
-  EventMachine::start_server("0.0.0.0", 5555, FakeFTPServer)
+  EventMachine::start_server("0.0.0.0", 5555, FTPServer, FakeFTPDriver.new)
 end
