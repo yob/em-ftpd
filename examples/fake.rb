@@ -7,6 +7,11 @@
 #
 #   ruby -Ilib examples/fake.rb
 
+require 'rubygems'
+require 'bundler'
+
+Bundler.setup
+
 require 'ftpd'
 
 class FakeFTPServer < FTPServer
