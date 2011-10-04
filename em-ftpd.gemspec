@@ -13,6 +13,7 @@ Gem::Specification.new do |spec|
   spec.homepage = "http://github.com/yob/em-ftpd"
   spec.required_ruby_version = ">=1.9.2"
 
+  spec.add_development_dependency("rake")
   spec.add_development_dependency("rspec", "~>2.6")
   spec.add_development_dependency("em-redis")
   spec.add_development_dependency("guard")
