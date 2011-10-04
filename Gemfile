@@ -11,6 +11,4 @@ group :development do
   gem 'guard'
   gem 'guard-process'
   gem 'guard-bundler'
-  gem 'rb-fsevent'
-  gem 'growl_notify'
 end
