@@ -25,7 +25,7 @@ module EM::FTPD
       @mode   = :binary
       @name_prefix = "/"
 
-      send_response "220 FTP server (rftpd) ready"
+      send_response "220 FTP server (em-ftpd) ready"
     end
 
     def receive_line(str)
