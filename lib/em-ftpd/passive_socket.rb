@@ -6,8 +6,6 @@ module EM::FTPD
   class PassiveSocket < EventMachine::Connection
     include EM::Deferrable
 
-    attr_reader :data
-
     def self.start(host, control_server)
       EventMachine.start_server(host, 0, self) do |conn|
         control_server.datasocket = conn

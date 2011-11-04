@@ -70,7 +70,6 @@ module EM::FTPD
 
       param = '' if param.to_s == '-a'
 
-
       @driver.dir_contents(build_path(param)) do |files|
         now = Time.now
         lines = files.map { |item|
