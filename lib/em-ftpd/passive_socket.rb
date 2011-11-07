@@ -5,6 +5,8 @@ module EM::FTPD
   #
   class PassiveSocket < EventMachine::Connection
     include EM::Deferrable
+    include BaseSocket
+    
 
     def self.start(host, control_server)
       EventMachine.start_server(host, 0, self) do |conn|
@@ -23,16 +25,6 @@ module EM::FTPD
       Socket.unpack_sockaddr_in( EM.get_sockname( sig ) ).first
     end
 
-    def data
-      @data ||= ""
-    end
-
-    def receive_data(chunk)
-      data << chunk
-    end
-
-    def unbind
-      self.set_deferred_status :succeeded, data
-    end
+    
   end
 end

@@ -4,21 +4,11 @@ module EM::FTPD
   #
   class ActiveSocket < EventMachine::Connection
     include EM::Deferrable
+    include BaseSocket
 
     def self.open(host, port)
       EventMachine.connect(host, port, self)
     end
 
-    def data
-      @data ||= ""
-    end
-
-    def receive_data(chunk)
-      data << chunk
-    end
-
-    def unbind
-      self.set_deferred_status :succeeded, data
-    end
   end
 end
