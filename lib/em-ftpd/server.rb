@@ -1,11 +1,14 @@
 require 'socket'
 require 'stringio'
 
+require 'em/protocols/line_protocol'
+
 module EM::FTPD
-  class Server < EM::Protocols::LineAndTextProtocol
+  class Server < EM::Connection
 
     LBRK = "\r\n"
 
+    include EM::Protocols::LineProtocol
     include Authentication
     include Directories
     include Files
