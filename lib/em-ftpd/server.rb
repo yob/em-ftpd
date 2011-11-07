@@ -36,23 +36,21 @@ module EM::FTPD
     end
 
     def receive_line(str)
-      Fiber.new do
-        cmd, param = parse_request(str)
+      cmd, param = parse_request(str)
 
-        # if the command is contained in the whitelist, and there is a method
-        # to handle it, call it. Otherwise send an appropriate response to the
-        # client
-        if COMMANDS.include?(cmd) && self.respond_to?("cmd_#{cmd}".to_sym, true)
-          begin
-            self.__send__("cmd_#{cmd}".to_sym, param)
-          rescue Exception => err
-            puts "#{err.class}: #{err}"
-            puts err.backtrace.join("\n")
-          end
-        else
-          send_response "500 Sorry, I don't understand #{cmd.upcase}"
+      # if the command is contained in the whitelist, and there is a method
+      # to handle it, call it. Otherwise send an appropriate response to the
+      # client
+      if COMMANDS.include?(cmd) && self.respond_to?("cmd_#{cmd}".to_sym, true)
+        begin
+          self.__send__("cmd_#{cmd}".to_sym, param)
+        rescue Exception => err
+          puts "#{err.class}: #{err}"
+          puts err.backtrace.join("\n")
         end
-      end.resume
+      else
+        send_response "500 Sorry, I don't understand #{cmd.upcase}"
+      end
     end
 
     private
