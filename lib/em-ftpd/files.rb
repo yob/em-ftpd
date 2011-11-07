@@ -1,5 +1,6 @@
 module EM::FTPD
   module Files
+
     # delete a file
     def cmd_dele(param)
       send_unauthorised and return unless logged_in?
@@ -7,7 +8,7 @@ module EM::FTPD
 
       path = build_path(param)
 
-      @driver.delete_file(@user, path) do |result|
+      @driver.delete_file(path) do |result|
         if result
           send_response "250 File deleted"
         else
@@ -28,7 +29,7 @@ module EM::FTPD
 
       path = build_path(param)
 
-      @driver.get_file(@user, path) do |data|
+      @driver.get_file(path) do |data|
         if data
           send_response "150 Data transfer starting #{data.size} bytes"
           send_outofband_data(data)
@@ -52,7 +53,7 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      @driver.rename(@user, @from_filename, build_path(param)) do |result|
+      @driver.rename(@from_filename, build_path(param)) do |result|
         if result
           send_response "250 File renamed."
         else
@@ -66,7 +67,7 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      @driver.bytes(@user, build_path(param)) do |bytes|
+      @driver.bytes(build_path(param)) do |bytes|
         if bytes
           send_response "213 #{bytes}"
         else

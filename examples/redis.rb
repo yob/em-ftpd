@@ -22,11 +22,11 @@ class RedisFTPDriver
     @redis = redis
   end
 
-  def change_dir(user, path, &block)
+  def change_dir(path, &block)
     yield path == "/" || @redis.sismember(directory_key(File.dirname(path)), File.basename(path) + "/")
   end
 
-  def dir_contents(user, path, &block)
+  def dir_contents(path, &block)
     response = @redis.smembers(directory_key(path))
 
     yield response.map do |key|
@@ -44,24 +44,24 @@ class RedisFTPDriver
     yield true
   end
 
-  def get_file(user, path, &block)
+  def get_file(path, &block)
     yield @redis.get(file_data_key(path))
   end
 
-  def put_file(user, path, data, &block)
+  def put_file(path, data, &block)
     @redis.set(file_data_key(path), data)
     @redis.sadd(directory_key(File.dirname(path)), File.basename(path))
     yield
   end
 
-  def delete_file(user, path, &block)
+  def delete_file(path, &block)
     @redis.del(file_data_key(path))
     @redis.srem(directory_key(File.dirname(path)), File.basename(path))
     yield true
   end
 
 
-  def delete_dir(user, path, &block)
+  def delete_dir(path, &block)
     (@redis.keys(directory_key(path + "/*") + @redis.keys(file_data_key(path + "/*")))).each do |key|
       @redis.del(key)
     end
@@ -69,7 +69,7 @@ class RedisFTPDriver
     yield true
   end
 
-  def rename(user, from, to, &block)
+  def rename(from, to, &block)
     if @redis.sismember(directory_key(File.dirname(from)), File.basename(from))
       yield move_file(from, to)
     elsif @redis.sismember(directory_key(File.dirname(from)), File.basename(from) + '/')
@@ -79,7 +79,7 @@ class RedisFTPDriver
     end
   end
 
-  def make_dir(user, path, &block)
+  def make_dir(path, &block)
     @redis.sadd(directory_key(File.dirname(path)), File.basename(path) + "/")
     yield true
   end

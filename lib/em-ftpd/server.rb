@@ -279,6 +279,15 @@ module EM::FTPD
       send_response "425 Error establishing connection"
     end
 
+    # waits for the data socket to be established
+    def wait_for_datasocket(interval = 0.1, &block)
+      if @datasocket.nil? && interval < 25
+        EventMachine.add_timer(interval) { wait_for_datasocket(interval * 2, block) }
+        return
+      end
+      yield @datasocket
+    end
+
     # receive a file data from the client across the data socket.
     #
     # The data socket is NOT guaranteed to be setup by the time this method runs.
@@ -329,6 +338,10 @@ module EM::FTPD
 
     def send_unauthorised
       send_response "530 Not logged in"
+    end
+
+    def driver_supports feature
+      @driver.respond_to?(:features) ? @driver.features[feature] : false
     end
 
   end

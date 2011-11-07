@@ -18,11 +18,11 @@ class FakeFTPDriver
   FILE_ONE = "This is the first file available for download.\n\nBy James"
   FILE_TWO = "This is the file number two.\n\n2009-03-21"
 
-  def change_dir(user, path, &block)
+  def change_dir(path, &block)
     yield path == "/" || path == "/files"
   end
 
-  def dir_contents(user, path, &block)
+  def dir_contents(path, &block)
     case path
     when "/"      then
       yield [ dir_item("files"), file_item("one.txt", FILE_ONE.bytesize) ]
@@ -37,7 +37,7 @@ class FakeFTPDriver
     yield user == "test" && pass == "1234"
   end
 
-  def bytes(user, path, &block)
+  def bytes(path, &block)
     yield case path
           when "/one.txt"       then FILE_ONE.size
           when "/files/two.txt" then FILE_TWO.size
@@ -46,7 +46,7 @@ class FakeFTPDriver
           end
   end
 
-  def get_file(user, path, &block)
+  def get_file(path, &block)
     yield case path
           when "/one.txt"       then FILE_ONE
           when "/files/two.txt" then FILE_TWO
@@ -55,23 +55,23 @@ class FakeFTPDriver
           end
   end
 
-  def put_file(user, path, data, &block)
+  def put_file(path, data, &block)
     yield false
   end
 
-  def delete_file(user, path, &block)
+  def delete_file(path, &block)
     yield false
   end
 
-  def delete_dir(user, path, &block)
+  def delete_dir(path, &block)
     yield false
   end
 
-  def rename(user, from, to, &block)
+  def rename(from, to, &block)
     yield false
   end
 
-  def make_dir(iser, path, &block)
+  def make_dir(path, &block)
     yield false
   end
 

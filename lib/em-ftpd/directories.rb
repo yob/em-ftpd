@@ -15,7 +15,7 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       path = build_path(param)
 
-      @driver.change_dir(@user, path) do |result|
+      @driver.change_dir(path) do |result|
         if result
           @name_prefix = path
           send_response "250 Directory changed to #{path}"
@@ -33,7 +33,7 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      @driver.make_dir(@user, build_path(param)) do |result|
+      @driver.make_dir(build_path(param)) do |result|
         if result
           send_response "257 Directory created"
         else
@@ -50,7 +50,7 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_response "150 Opening ASCII mode data connection for file list"
 
-      @driver.dir_contents(@user, build_path(param)) do |files|
+      @driver.dir_contents(build_path(param)) do |files|
         send_outofband_data(files.map(&:name))
       end
     end
@@ -71,7 +71,7 @@ module EM::FTPD
       param = '' if param.to_s == '-a'
 
 
-      @driver.dir_contents(@user, build_path(param)) do |files|
+      @driver.dir_contents(build_path(param)) do |files|
         now = Time.now
         lines = files.map { |item|
           sizestr = (item.size || 0).to_s.rjust(12)
@@ -95,7 +95,7 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      @driver.delete_dir(@user, build_path(param)) do |result|
+      @driver.delete_dir(build_path(param)) do |result|
         if result
           send_response "250 Directory deleted."
         else

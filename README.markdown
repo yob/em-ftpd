@@ -26,36 +26,36 @@ MUST accept a block and yield the appropriate value:
     authenticate(user, pass, &block)
     - boolean indicating if the provided details are valid
 
-    bytes(user, path, &block)
+    bytes(path, &block)
     - an integer with the number of bytes in the file or nil if the file
       doesn't exist
 
-    change_dir(user, path, &block)
+    change_dir(path, &block)
     - a boolen indicating if the current user is permitted to change to the
       requested path
 
-    dir_contents(user, path, &block)
+    dir_contents(path, &block)
     - an array of the contents of the requested path or nil if the dir
       doesn't exist. Each entry in the array should be
       EM::FTPD::DirectoryItem-ish
 
-    get_file(user, path, &block)
+    get_file(path, &block)
     - a string with the file contents at the requested path or nil if the
       user isn't permitted to access that path
 
-    put_file(user, path, data, &block)
+    put_file(path, data, &block)
     - a boolean indicating if data was persisted to path
 
-    delete_dir(user, path, &block)
+    delete_dir(path, &block)
     - a boolean indicating if the directory was successfully deleted
 
-    delete_file(user, path, &block)
+    delete_file(path, &block)
     - a boolean indicating if path was successfully deleted
 
-    rename(user, from_path, to_path, &block)
+    rename(from_path, to_path, &block)
     - a boolean indicating if from_path was successfully renamed to to_path
 
-    make_dir(user, path, &block)
+    make_dir(path, &block)
     - a boolean indicating if path was successfully created as a new directory
 
 ## Authors
