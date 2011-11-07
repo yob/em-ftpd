@@ -20,5 +20,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency("guard-process")
   spec.add_development_dependency("guard-bundler")
 
-  spec.add_dependency('em-synchrony')
+  spec.add_dependency('eventmachine')
 end
