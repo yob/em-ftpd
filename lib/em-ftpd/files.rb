@@ -83,11 +83,30 @@ module EM::FTPD
 
       path = build_path(param)
 
-      receive_outofband_data do |data|
-        @driver.put_file(@user, path, data) do |result|
-          send_action_not_taken unless result
+      if driver_supports :streaming
+        wait_for_datasocket do |datasocket|
+          if datasocket
+            send_response "150 Data transfer starting"
+            @driver.put_file(path, datasocket) do |size|
+              case size
+              when FalseClass
+                send_action_not_taken
+              else
+                send_response "200 OK, received #{size} bytes"
+              end
+            end
+          else
+            send_response "425 Error establishing connection"
+          end
+        end
+      else
+        receive_outofband_data do |data|
+          @driver.put_file(path, data) do |result|
+            send_action_not_taken unless result
+          end
         end
       end
+      
     end
 
   end
