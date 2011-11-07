@@ -282,8 +282,8 @@ describe EM::FTPD::Server, "LIST" do
   let!(:root_files) {
     timestr = Time.now.strftime("%b %d %H:%M")
     [
-      "drwxrwxrwx 1 owner group            0 #{timestr} .",
-      "drwxrwxrwx 1 owner group            0 #{timestr} ..",
+      "drwxr-xr-x 1 owner group            0 #{timestr} .",
+      "drwxr-xr-x 1 owner group            0 #{timestr} ..",
       "drwxr-xr-x 1 owner group            0 #{timestr} files",
       "-rwxr-xr-x 1 owner group           56 #{timestr} one.txt"
     ]
@@ -291,8 +291,8 @@ describe EM::FTPD::Server, "LIST" do
   let!(:dir_files) {
     timestr = Time.now.strftime("%b %d %H:%M")
     [
-      "drwxrwxrwx 1 owner group            0 #{timestr} .",
-      "drwxrwxrwx 1 owner group            0 #{timestr} ..",
+      "drwxr-xr-x 1 owner group            0 #{timestr} .",
+      "drwxr-xr-x 1 owner group            0 #{timestr} ..",
       "-rwxr-xr-x 1 owner group           40 #{timestr} two.txt"
     ]
   }

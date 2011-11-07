@@ -7,10 +7,12 @@ module EM::FTPD
 
       path = build_path(param)
 
-      if @driver.delete_file(path)
-        send_response "250 File deleted"
-      else
-        send_action_not_taken
+      @driver.delete_file(@user, path) do |result|
+        if result
+          send_response "250 File deleted"
+        else
+          send_action_not_taken
+        end
       end
     end
 
@@ -26,11 +28,13 @@ module EM::FTPD
 
       path = build_path(param)
 
-      if data = @driver.get_file(path)
-        send_response "150 Data transfer starting #{data.size} bytes"
-        send_outofband_data(data)
-      else
-        send_response "551 file not available"
+      @driver.get_file(@user, path) do |data|
+        if data
+          send_response "150 Data transfer starting #{data.size} bytes"
+          send_outofband_data(data)
+        else
+          send_response "551 file not available"
+        end
       end
     end
 
@@ -48,10 +52,12 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      if @driver.rename(@from_filename, build_path(param))
-        send_response "250 File renamed."
-      else
-        send_action_not_taken
+      @driver.rename(@user, @from_filename, build_path(param)) do |result|
+        if result
+          send_response "250 File renamed."
+        else
+          send_action_not_taken
+        end
       end
     end
 
@@ -60,12 +66,12 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      bytes = @driver.bytes(build_path(param))
-
-      if bytes
-        send_response "213 #{bytes}"
-      else
-        send_response "450 file not available"
+      @driver.bytes(@user, build_path(param)) do |bytes|
+        if bytes
+          send_response "213 #{bytes}"
+        else
+          send_response "450 file not available"
+        end
       end
     end
 
@@ -74,12 +80,12 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      filename = build_path(param)
+      path = build_path(param)
 
-      if @driver.can_put_file(filename)
-        @driver.put_file(filename, receive_outofband_data)
-      else
-        send_action_not_taken
+      receive_outofband_data do |data|
+        @driver.put_file(@user, path, data) do |result|
+          send_action_not_taken unless result
+        end
       end
     end
 

@@ -283,32 +283,23 @@ module EM::FTPD
     # If this happens, exit the method early and try again later. See the method
     # comments to send_outofband_data for further explanation.
     #
-    def receive_outofband_data(fiber = nil)
-      fiber = Fiber.current
-
-      10.times do |i|
-        if @datasocket.nil? && interval < 25
-          EventMachine.add_timer(0.1 * (i + 1) ** 2) { fiber.resume }
-          Fiber.yield
-        else
-          break
-        end
-      end
-
-      if @datasocket.nil?
+    def receive_outofband_data(interval = 0.1, &block)
+      if @datasocket.nil? && interval < 25
+        EventMachine.add_timer(interval) { receive_outofband_data(interval * 2, block) }
+        return
+      elsif @datasocket.nil?
         send_response "425 Error establishing connection"
-        return false
+        yield false
+        return
       end
 
       # let the client know we're ready to start
       send_response "150 Data transfer starting"
 
-      fiber = Fiber.current # not sure why we have to do this again, but it's required
       @datasocket.callback do |data|
         send_response "200 OK, received #{data.size} bytes"
-        fiber.resume(data)
+        block.call(data)
       end
-      Fiber.yield
     end
 
     # all responses from an FTP server end with \r\n, so wrap the

@@ -20,47 +20,46 @@ examples/ directory.
 ## The Driver Contract
 
 To boot an FTP server you will need to provide a driver that speaks to your
-persistence layer. The driver MUST have the following methods and return types:
+persistence layer. The driver MUST have the following methods. Each method
+MUST accept a block and yield the appropriate value:
 
-  authenticate(user, pass)
-  -> boolean indicating if the provided details are valid
+    authenticate(user, pass, &block)
+    - boolean indicating if the provided details are valid
 
-  bytes(path)
-  -> an integer with the number of bytes in the file or nil if the file
-     doesn't exist
+    bytes(user, path, &block)
+    - an integer with the number of bytes in the file or nil if the file
+      doesn't exist
 
-  change_dir(path)
-  -> a boolen indicating if the current user is permitted to change to the
-     requested path
+    change_dir(user, path, &block)
+    - a boolen indicating if the current user is permitted to change to the
+      requested path
 
-  dir_contents(path)
-  -> an array of the contents of the requested path. Each entry in the array
-     should be EM::FTPD::DirectoryItem-ish
+    dir_contents(user, path, &block)
+    - an array of the contents of the requested path or nil if the dir
+      doesn't exist. Each entry in the array should be
+      EM::FTPD::DirectoryItem-ish
 
-  get_file(path)
-  -> a string with the file contents at the request path or nil if the
-     user isn't permitted to access that path
+    get_file(user, path, &block)
+    - a string with the file contents at the requested path or nil if the
+      user isn't permitted to access that path
 
-  can_put_file(path)
-  -> a boolean indicating if the current user is permitted to upload to the
-    requested path
+    put_file(user, path, data, &block)
+    - a boolean indicating if data was persisted to path
 
-  delete_dir(path)
-  -> a boolean indicating if the directory was successfully deleted
+    delete_dir(user, path, &block)
+    - a boolean indicating if the directory was successfully deleted
 
-  delete_file(path)
-  -> a boolean indicating if the file was successfully deleted
+    delete_file(user, path, &block)
+    - a boolean indicating if path was successfully deleted
 
-  rename(from_path, to_path)
-  -> a boolean indicating if the file or directory was successfully renamed
+    rename(user, from_path, to_path, &block)
+    - a boolean indicating if from_path was successfully renamed to to_path
 
-  make_dir(path)
-  -> a boolean indicating if the file or directory was successfully created
-
+    make_dir(user, path, &block)
+    - a boolean indicating if path was successfully created as a new directory
 
 ## Authors
 
-Chris Wanstrath <chris@wanstrath.com>
 James Healy <james@yob.id.au> [http://www.yob.id.au](http://www.yob.id.au)
 John Nunemaker <nunemaker@gmail.com>
 Elijah Miller <elijah.miller@gmail.com>

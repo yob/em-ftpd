@@ -2,6 +2,9 @@
 
 # an FTP server that uses redis for persistance.
 #
+# NOTE: This may not be working as I don't have redis installed
+#       to test it. Feel free to fix it and submit a patch
+#
 # Usage:
 #
 #   ruby -Ilib examples/redis.rb
@@ -11,8 +14,6 @@ require 'bundler'
 
 Bundler.setup
 
-require 'em-synchrony'
-require 'em-synchrony/em-redis'
 require 'em-ftpd'
 
 class RedisFTPDriver
@@ -21,13 +22,14 @@ class RedisFTPDriver
     @redis = redis
   end
 
-  def change_dir(path)
-    path == "/" || @redis.sismember(directory_key(File.dirname(path)), File.basename(path) + "/")
+  def change_dir(user, path, &block)
+    yield path == "/" || @redis.sismember(directory_key(File.dirname(path)), File.basename(path) + "/")
   end
 
-  def dir_contents(path)
+  def dir_contents(user, path, &block)
     response = @redis.smembers(directory_key(path))
-    files = response.map do |key|
+
+    yield response.map do |key|
       name, size = key.sub(/ftp:\//, '').sub(%r{/$}, '')
       dir = key.match(%r{/$})
       EM::FPD::DirectoryItem.new(
@@ -38,52 +40,48 @@ class RedisFTPDriver
     end
   end
 
-  def authenticate(user, pass)
-    true
+  def authenticate(user, pass, &block)
+    yield true
   end
 
-  def get_file(path)
-    @redis.get(file_data_key(path))
+  def get_file(user, path, &block)
+    yield @redis.get(file_data_key(path))
   end
 
-  def can_put_file(path)
-    true
-  end
-
-  def put_file(path, data)
+  def put_file(user, path, data, &block)
     @redis.set(file_data_key(path), data)
     @redis.sadd(directory_key(File.dirname(path)), File.basename(path))
-    true
+    yield
   end
 
-  def delete_file(path)
+  def delete_file(user, path, &block)
     @redis.del(file_data_key(path))
     @redis.srem(directory_key(File.dirname(path)), File.basename(path))
-    true
+    yield true
   end
 
 
-  def delete_dir(path)
+  def delete_dir(user, path, &block)
     (@redis.keys(directory_key(path + "/*") + @redis.keys(file_data_key(path + "/*")))).each do |key|
       @redis.del(key)
     end
     @redis.srem(directory_key(File.dirname(path), File.basename(path) + "/"))
-    true
+    yield true
   end
 
-  def rename(from, to)
+  def rename(user, from, to, &block)
     if @redis.sismember(directory_key(File.dirname(from)), File.basename(from))
-      move_file(from, to)
+      yield move_file(from, to)
     elsif @redis.sismember(directory_key(File.dirname(from)), File.basename(from) + '/')
-      move_dir(from, to)
+      yield move_dir(from, to)
     else
-      false
+      yield false
     end
   end
 
-  def make_dir(path)
+  def make_dir(user, path, &block)
     @redis.sadd(directory_key(File.dirname(path)), File.basename(path) + "/")
-    true
+    yield true
   end
 
   private
@@ -129,7 +127,7 @@ trap "INT" do
   exit
 end
 
-EM.synchrony do
+EM.run do
   redis  = EM::Protocols::Redis.connect
   driver = RedisFTPDriver.new(redis)
   puts "Starting ftp server on 0.0.0.0:5555"

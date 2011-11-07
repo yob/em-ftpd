@@ -15,11 +15,13 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       path = build_path(param)
 
-      if @driver.change_dir(path)
-        @name_prefix = path
-        send_response "250 Directory changed to #{path}"
-      else
-        send_permission_denied
+      @driver.change_dir(@user, path) do |result|
+        if result
+          @name_prefix = path
+          send_response "250 Directory changed to #{path}"
+        else
+          send_permission_denied
+        end
       end
     end
 
@@ -31,10 +33,12 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      if @driver.make_dir(build_path(param))
-        send_response "257 Directory created"
-      else
-        send_action_not_taken
+      @driver.make_dir(@user, build_path(param)) do |result|
+        if result
+          send_response "257 Directory created"
+        else
+          send_action_not_taken
+        end
       end
     end
 
@@ -46,8 +50,9 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_response "150 Opening ASCII mode data connection for file list"
 
-      files = @driver.list_dir(build_path(param))
-      send_outofband_data(files.map { |f| f.name })
+      @driver.dir_contents(@user, build_path(param)) do |files|
+        send_outofband_data(files.map(&:name))
+      end
     end
 
 
@@ -58,10 +63,6 @@ module EM::FTPD
       ]
     end
 
-    def list_dir(dir)
-      default_files(dir) + @driver.dir_contents(dir)
-    end
-
     # return a detailed list of files and directories
     def cmd_list(param)
       send_unauthorised and return unless logged_in?
@@ -69,17 +70,15 @@ module EM::FTPD
 
       param = '' if param.to_s == '-a'
 
-      dir = File.join(@name_prefix.to_s, param.to_s)
 
-      now = Time.now
-
-      items = list_dir(build_path(param))
-      lines = items.map { |item|
-        sizestr = (item.size || 0).to_s.rjust(12)
-        "#{item.directory ? 'd' : '-'}#{item.permissions || 'rwxrwxrwx'} 1 #{item.owner || 'owner'} #{item.group || 'group'} #{sizestr} #{(item.time || now).strftime("%b %d %H:%M")} #{item.name}"
-      }
-      send_outofband_data(lines)
-      # send_action_not_taken
+      @driver.dir_contents(@user, build_path(param)) do |files|
+        now = Time.now
+        lines = files.map { |item|
+          sizestr = (item.size || 0).to_s.rjust(12)
+          "#{item.directory ? 'd' : '-'}#{item.permissions || 'rwxrwxrwx'} 1 #{item.owner || 'owner'} #{item.group || 'group'} #{sizestr} #{(item.time || now).strftime("%b %d %H:%M")} #{item.name}"
+        }
+        send_outofband_data(lines)
+      end
     end
 
     # return the current directory
@@ -96,10 +95,12 @@ module EM::FTPD
       send_unauthorised and return unless logged_in?
       send_param_required and return if param.nil?
 
-      if @driver.delete_dir(build_path(param))
-        send_response "250 Directory deleted."
-      else
-        send_action_not_taken
+      @driver.delete_dir(@user, build_path(param)) do |result|
+        if result
+          send_response "250 Directory deleted."
+        else
+          send_action_not_taken
+        end
       end
     end
 
