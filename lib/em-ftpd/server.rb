@@ -104,18 +104,14 @@ module EM::FTPD
 
     # handle the HELP FTP command by sending a list of available commands.
     def cmd_help(param)
-      commands = COMMANDS
-      commands.sort!
       send_response "214- The following commands are recognized."
-      i   = 1
-      str = "  "
-      commands.each do |c|
-        str += "#{c}"
-        str += "\t\t"
-        str += LBRK << "  " if (i % 3) == 0
-        i   += 1
-      end
+      commands = COMMANDS
+      str = ""
+      commands.sort.each_slice(3) { |slice|
+        str += "     " + slice.join("\t\t") + LBRK
+      }
       send_response str, true
+      send_response "214 End of list."
     end
 
 
