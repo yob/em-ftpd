@@ -11,7 +11,7 @@ module EM::FTPD
     include Files
 
     COMMANDS = %w[quit type user retr stor port cdup cwd dele rmd pwd list size
-                  syst mkd pass xcup xpwd xcwd xrmd rest allo nlst pasv allo help
+                  syst mkd pass xcup xpwd xcwd xrmd rest allo nlst pasv help
                   noop mode rnfr rnto stru]
 
     attr_reader :root, :name_prefix
