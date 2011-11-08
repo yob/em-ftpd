@@ -17,8 +17,14 @@ module EM::FTPD
     attr_reader :root, :name_prefix
     attr_accessor :datasocket
 
-    def initialize(driver)
-      @driver = driver
+    def initialize(driver, *args)
+      if driver.is_a? Class
+        @driver = driver.new *args
+      else
+        @driver = driver
+      end
+      @datasocket = nil
+      @listen_sig = nil
       super()
     end
 
