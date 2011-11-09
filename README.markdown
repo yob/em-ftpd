@@ -60,7 +60,7 @@ yield the appropriate value:
 The driver MUST have one of the following methods. Each method MUST accept a
 block and yield the appropriate value:
 
-    put_file(path, data, &block)
+    put_file(path, tmp_file_path, &block)
     - an integer indicating the number of bytes received or False if there
       was an error
 

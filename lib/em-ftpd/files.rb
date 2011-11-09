@@ -1,3 +1,5 @@
+require 'tempfile'
+
 module EM::FTPD
   module Files
 
@@ -86,17 +88,17 @@ module EM::FTPD
       if @driver.respond_to?(:put_file_streamed)
         cmd_stor_streamed(path)
       elsif @driver.respond_to?(:put_file)
-        cmd_stor_memory(path)
+        cmd_stor_tempfile(path)
       else
         raise "driver MUST respond to put_file OR put_file_streamed"
       end
     end
 
-    def cmd_stor_streamed(path)
+    def cmd_stor_streamed(target_path)
       wait_for_datasocket do |datasocket|
         if datasocket
           send_response "150 Data transfer starting"
-          @driver.put_file_streamed(path, datasocket) do |bytes|
+          @driver.put_file_streamed(target_path, datasocket) do |bytes|
             if bytes
               send_response "200 OK, received #{bytes} bytes"
             else
@@ -109,15 +111,29 @@ module EM::FTPD
       end
     end
 
-    def cmd_stor_memory(path)
-      receive_outofband_data do |data|
-        @driver.put_file(path, data) do |bytes|
-          if bytes
-            send_response "200 OK, received #{bytes} bytes"
-          else
-            send_action_not_taken
+    def cmd_stor_tempfile(target_path)
+      tmpfile = Tempfile.new("em-ftp")
+
+      wait_for_datasocket do |datasocket|
+        datasocket.on_stream { |chunk|
+          tmpfile.write chunk
+        }
+        send_response "150 Data transfer starting"
+        datasocket.callback {
+          puts "data transfer finished"
+          tmpfile.flush
+          @driver.put_file(target_path, tmpfile.path) do |bytes|
+            if bytes
+              send_response "200 OK, received #{bytes} bytes"
+            else
+              send_action_not_taken
+            end
           end
-        end
+          tmpfile.unlink
+        }
+        datasocket.errback {
+          tmpfile.unlink
+        }
       end
     end
 
