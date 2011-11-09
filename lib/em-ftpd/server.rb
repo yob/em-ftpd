@@ -255,15 +255,14 @@ module EM::FTPD
 
         if data.is_a?(Array)
           data = data.join(LBRK) << LBRK
-        elsif data.kind_of?(String)
-          data = StringIO.new(data)
         end
+        data = StringIO.new(data) if data.kind_of?(String)
 
         begin
           bytes = 0
           data.each do |line|
             datasocket.send_data(line)
-            bytes += line.length
+            bytes += line.bytesize
           end
           send_response "226 Closing data connection, sent #{bytes} bytes"
         ensure
