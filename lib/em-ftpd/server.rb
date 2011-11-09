@@ -276,7 +276,12 @@ module EM::FTPD
     # waits for the data socket to be established
     def wait_for_datasocket(interval = 0.1, &block)
       if @datasocket.nil? && interval < 25
-        EventMachine.add_timer(interval) { wait_for_datasocket(interval * 2, block) }
+        if EM.reactor_running?
+          EventMachine.add_timer(interval) { wait_for_datasocket(interval * 2, &block) }
+        else
+          sleep interval
+          wait_for_datasocket(interval * 2, &block)
+        end
         return
       end
       yield @datasocket
