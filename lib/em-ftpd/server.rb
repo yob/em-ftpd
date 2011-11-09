@@ -268,8 +268,6 @@ module EM::FTPD
           close_datasocket
           data.close if data.class == File
         end
-      rescue
-        send_response "425 Error establishing connection"
       end
     end
 
@@ -300,7 +298,6 @@ module EM::FTPD
         send_response "150 Data transfer starting"
 
         datasocket.callback do |data|
-          send_response "200 OK, received #{data.size} bytes"
           block.call(data)
         end
       end
@@ -331,10 +328,6 @@ module EM::FTPD
 
     def send_unauthorised
       send_response "530 Not logged in"
-    end
-
-    def driver_supports feature
-      @driver.respond_to?(:features) ? @driver.features[feature] : false
     end
 
   end

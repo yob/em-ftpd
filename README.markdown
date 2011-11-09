@@ -20,8 +20,10 @@ examples/ directory.
 ## The Driver Contract
 
 To boot an FTP server you will need to provide a driver that speaks to your
-persistence layer. The driver MUST have the following methods. Each method
-MUST accept a block and yield the appropriate value:
+persistence layer.
+
+The driver MUST have the following methods. Each method MUST accept a block and
+yield the appropriate value:
 
     authenticate(user, pass, &block)
     - boolean indicating if the provided details are valid
@@ -39,13 +41,6 @@ MUST accept a block and yield the appropriate value:
       doesn't exist. Each entry in the array should be
       EM::FTPD::DirectoryItem-ish
 
-    get_file(path, &block)
-    - a string with the file contents at the requested path or nil if the
-      user isn't permitted to access that path
-
-    put_file(path, data, &block)
-    - a boolean indicating if data was persisted to path
-
     delete_dir(path, &block)
     - a boolean indicating if the directory was successfully deleted
 
@@ -57,6 +52,21 @@ MUST accept a block and yield the appropriate value:
 
     make_dir(path, &block)
     - a boolean indicating if path was successfully created as a new directory
+
+    get_file(path, &block)
+    - a string with the file contents at the requested path or nil if the
+      user isn't permitted to access that path
+
+The driver MUST have one of the following methods. Each method MUST accept a
+block and yield the appropriate value:
+
+    put_file(path, data, &block)
+    - an integer indicating the number of bytes received or False if there
+      was an error
+
+    put_file_streamed(path, datasocket, &block)
+    - an integer indicating the number of bytes received or False if there
+      was an error
 
 ## Authors
 

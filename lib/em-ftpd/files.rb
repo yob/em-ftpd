@@ -83,30 +83,42 @@ module EM::FTPD
 
       path = build_path(param)
 
-      if driver_supports :streaming
-        wait_for_datasocket do |datasocket|
-          if datasocket
-            send_response "150 Data transfer starting"
-            @driver.put_file(path, datasocket) do |size|
-              case size
-              when FalseClass
-                send_action_not_taken
-              else
-                send_response "200 OK, received #{size} bytes"
-              end
-            end
-          else
-            send_response "425 Error establishing connection"
-          end
-        end
+      if @driver.respond_to?(:put_file_streamed)
+        cmd_stor_streamed(path)
+      elsif @driver.respond_to?(:put_file)
+        cmd_stor_memory(path)
       else
-        receive_outofband_data do |data|
-          @driver.put_file(path, data) do |result|
-            send_action_not_taken unless result
+        raise "driver MUST respond to put_file OR put_file_streamed"
+      end
+    end
+
+    def cmd_stor_streamed(path)
+      wait_for_datasocket do |datasocket|
+        if datasocket
+          send_response "150 Data transfer starting"
+          @driver.put_file_streamed(path, datasocket) do |bytes|
+            if bytes
+              send_response "200 OK, received #{bytes} bytes"
+            else
+              send_action_not_taken
+            end
+          end
+        else
+          send_response "425 Error establishing connection"
+        end
+      end
+    end
+
+    def cmd_stor_memory(path)
+      receive_outofband_data do |data|
+        @driver.put_file(path, data) do |bytes|
+          if bytes
+            send_response "200 OK, received #{bytes} bytes"
+          else
+            send_action_not_taken
           end
         end
       end
-      
     end
 
   end
