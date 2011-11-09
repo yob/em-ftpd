@@ -54,8 +54,12 @@ yield the appropriate value:
     - a boolean indicating if path was successfully created as a new directory
 
     get_file(path, &block)
-    - a string with the file contents at the requested path or nil if the
-      user isn't permitted to access that path
+    - nil if the user isn't permitted to access that path
+    - an IOish (File, StringIO, IO, etc) object with data to send back to the
+      client
+    - a string with the file data to send to the client
+    - an array of strings to join with the standard FTP line break and send to
+      the client
 
 The driver MUST have one of the following methods. Each method MUST accept a
 block and yield the appropriate value:

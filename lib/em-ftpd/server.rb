@@ -255,8 +255,10 @@ module EM::FTPD
 
         if data.is_a?(Array)
           data = data.join(LBRK) << LBRK
+        elsif data.kind_of?(String)
+          data = StringIO.new(data)
         end
-        data = StringIO.new(data) if data.kind_of?(String)
+
         begin
           bytes = 0
           data.each do |line|
@@ -266,7 +268,7 @@ module EM::FTPD
           send_response "226 Closing data connection, sent #{bytes} bytes"
         ensure
           close_datasocket
-          data.close if data.class == File
+          data.close if data.respond_to?(:close)
         end
       end
     end
