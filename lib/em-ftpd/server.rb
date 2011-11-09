@@ -85,7 +85,6 @@ module EM::FTPD
       [cmd.downcase, param]
     end
 
-
     def close_datasocket
       if @datasocket
         @datasocket.close_connection_after_writing
@@ -115,7 +114,6 @@ module EM::FTPD
       send_response "214 End of list."
     end
 
-
     # the original FTP spec had various options for hosts to negotiate how data
     # would be sent over the data socket, In reality these days (S)tream mode
     # is all that is used for the mode - data is just streamed down the data
@@ -130,7 +128,6 @@ module EM::FTPD
         send_response "504 MODE is an obsolete command"
       end
     end
-
 
     # handle the NOOP FTP command. This is essentially a ping from the client
     # so we just respond with an empty 200 message.
@@ -163,7 +160,7 @@ module EM::FTPD
       send_response "227 Entering Passive Mode (" + host.split(".").join(",") + ",#{p1},#{p2})"
     end
 
-    # Active FTP. An alternative to Passive FTP. The client as a listening socket
+    # Active FTP. An alternative to Passive FTP. The client has a listening socket
     # open, waiting for us to connect and establish a data socket. Attempt to
     # open a connection to the host and port they specify and save the connection,
     # ready for either end to send something down it.
@@ -185,8 +182,6 @@ module EM::FTPD
       puts "Error opening data connection to #{host}:#{port}"
       send_response "425 Data connection failed"
     end
-
-
 
     # handle the QUIT FTP command by closing the connection
     def cmd_quit(param)
@@ -214,7 +209,7 @@ module EM::FTPD
 
     # return the name of the server
     def cmd_syst(param)
-      send_response "530 Not logged in" and return unless @user
+      send_unauthorised and return unless logged_in?
       send_response "215 UNIX Type: L8"
     end
 
@@ -237,7 +232,6 @@ module EM::FTPD
         send_response "500 Invalid type"
       end
     end
-
 
     # send data to the client across the data socket.
     #
