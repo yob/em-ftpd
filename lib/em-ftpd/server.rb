@@ -1,6 +1,7 @@
 require 'socket'
 require 'stringio'
 
+require 'eventmachine'
 require 'em/protocols/line_protocol'
 
 module EM::FTPD
