@@ -7,14 +7,7 @@
 #
 # Usage:
 #
-#   ruby -Ilib examples/redis.rb
-
-require 'rubygems'
-require 'bundler'
-
-Bundler.setup
-
-require 'em-ftpd'
+#   em-ftpd examples/redis.rb
 
 class RedisFTPDriver
 
@@ -118,18 +111,11 @@ class RedisFTPDriver
 
 end
 
-# signal handling, ensure we exit gracefully
-trap "SIGCLD", "IGNORE"
-trap "INT" do
-  puts "exiting..."
-  puts
-  EventMachine::run
-  exit
-end
-
-EM.run do
-  redis  = EM::Protocols::Redis.connect
-  driver = RedisFTPDriver.new(redis)
-  puts "Starting ftp server on 0.0.0.0:5555"
-  EventMachine::start_server("0.0.0.0", 5555, FTPServer, driver)
-end
+# configure the server
+driver     FakeFTPDriver
+#driver_args 1, 2, 3
+#user      "ftp"
+#group     "ftp"
+#daemonise false
+#name      "fakeftp"
+#pid_file  "/var/run/fakeftp.pid"

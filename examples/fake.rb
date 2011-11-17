@@ -5,14 +5,7 @@
 #
 # Usage:
 #
-#   ruby -Ilib examples/fake.rb
-
-require 'rubygems'
-require 'bundler'
-
-Bundler.setup
-
-require 'em-ftpd'
+#   em-ftpd examples/fake.rb
 
 class FakeFTPDriver
   FILE_ONE = "This is the first file available for download.\n\nBy James"
@@ -87,16 +80,11 @@ class FakeFTPDriver
 
 end
 
-# signal handling, ensure we exit gracefully
-trap "SIGCLD", "IGNORE"
-trap "INT" do
-  puts "exiting..."
-  puts
-  EventMachine::run
-  exit
-end
-
-EM.run do
-  puts "Starting ftp server on 0.0.0.0:5555"
-  EventMachine::start_server("0.0.0.0", 5555, EM::FTPD::Server, FakeFTPDriver.new)
-end
+# configure the server
+driver     FakeFTPDriver
+#driver_args 1, 2, 3
+#user      "ftp"
+#group     "ftp"
+#daemonise false
+#name      "fakeftp"
+#pid_file  "/var/run/fakeftp.pid"

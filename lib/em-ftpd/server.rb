@@ -22,7 +22,10 @@ module EM::FTPD
     attr_accessor :datasocket
 
     def initialize(driver, *args)
-      if driver.is_a? Class
+      args.compact!
+      if driver.is_a?(Class) && args.empty?
+        @driver = driver.new
+      elsif driver.is_a?(Class)
         @driver = driver.new *args
       else
         @driver = driver

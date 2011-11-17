@@ -1,0 +1,18 @@
+#!/usr/bin/ruby
+
+# Boot an FTP server
+#
+# Usage:
+#
+#   em-ftpd config.rb
+
+require 'em-ftpd'
+
+config_file = ARGV.first
+
+if config_file && File.file?(config_file)
+  EM::FTPD::App.start(config_file)
+else
+  $stderr.puts "USAGE: em-ftpd <config.rb>"
+  exit 1
+end
