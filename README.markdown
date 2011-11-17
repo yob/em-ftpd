@@ -17,10 +17,40 @@ Some sample use cases include persisting data to:
 For some examples that demonstrate redis and memory persistence, check the
 examples/ directory.
 
-## The Driver Contract
+## Usage
 
 To boot an FTP server you will need to provide a driver that speaks to your
 persistence layer.
+
+Create a config.rb file that loads the driver and then configures the server
+
+
+    require 'my_fancy_driver'
+
+    driver    MyFancyDriver
+    user      'ftp'
+    group     'ftp'
+
+
+Run your server like so:
+
+
+    em-ftpd config.rb
+
+## Config File
+
+Valid options for the config file are:
+
+* user        [name of system user to run the process as]
+* group       [name of group to run the process as]
+* daemonise   [true/false]
+* name        [a string to include in the process description]
+* pid_file    [a path to save the pid to. Useful in conjunction with daemonise]
+* port        [the TCP port to bind to. Defaults to 21]
+* driver      [the class that connects to the persistance layer]
+* driver_args [any arguments that need to be passed to the driver constructor]
+
+## The Driver Contract
 
 The driver MUST have the following methods. Each method MUST accept a block and
 yield the appropriate value:
