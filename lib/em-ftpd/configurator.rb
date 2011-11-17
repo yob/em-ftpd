@@ -1,7 +1,5 @@
 # coding: utf-8
 
-require 'singleton'
-
 module EM::FTPD
 
   class Configurator
