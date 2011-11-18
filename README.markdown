@@ -17,6 +17,10 @@ Some sample use cases include persisting data to:
 For some examples that demonstrate redis and memory persistence, check the
 examples/ directory.
 
+## Installation
+
+    gem install em-ftpd
+
 ## Usage
 
 To boot an FTP server you will need to provide a driver that speaks to your
