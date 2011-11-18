@@ -14,9 +14,9 @@ module EM::FTPD
     include Directories
     include Files
 
-    COMMANDS = %w[quit type user retr stor port cdup cwd dele rmd pwd list size
-                  syst mkd pass xcup xpwd xcwd xrmd rest allo nlst pasv epsv help
-                  noop mode rnfr rnto stru feat]
+    COMMANDS = %w[quit type user retr stor eprt port cdup cwd dele rmd pwd
+                  list size syst mkd pass xcup xpwd xcwd xrmd rest allo nlst
+                  pasv epsv help noop mode rnfr rnto stru feat]
 
     attr_reader :root, :name_prefix
     attr_accessor :datasocket
@@ -191,6 +191,31 @@ module EM::FTPD
       send_response "200 Connection established (#{port})"
     rescue
       puts "Error opening data connection to #{host}:#{port}"
+      send_response "425 Data connection failed"
+    end
+
+    # Active FTP.
+    #
+    def cmd_eprt(param)
+      send_unauthorised and return unless logged_in?
+      send_param_required and return if param.nil?
+
+      delim = param[0,1]
+      m, af, host, port = *param.match(/#{delim}(.+?)#{delim}(.+?)#{delim}(.+?)#{delim}/)
+      port = port.to_i
+      close_datasocket
+
+      if af.to_i != 1 && ad.to_i != 2
+        send_response "522 Network protocol not supported, use (1,2)"
+      else
+        debug "connecting to client #{host} on #{port}"
+        @datasocket = FTPActiveDataSocket.open(host, port)
+
+        puts "Opened active connection at #{host}:#{port}"
+        send_response "200 Connection established (#{port})"
+      end
+    rescue
+      warn "Error opening data connection to #{host}:#{port}"
       send_response "425 Data connection failed"
     end
 
