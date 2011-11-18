@@ -16,7 +16,7 @@ module EM::FTPD
 
     COMMANDS = %w[quit type user retr stor port cdup cwd dele rmd pwd list size
                   syst mkd pass xcup xpwd xcwd xrmd rest allo nlst pasv epsv help
-                  noop mode rnfr rnto stru]
+                  noop mode rnfr rnto stru feat]
 
     attr_reader :root, :name_prefix
     attr_accessor :datasocket
@@ -115,6 +115,17 @@ module EM::FTPD
       }
       send_response str, true
       send_response "214 End of list."
+    end
+
+    def cmd_feat(param)
+      str = "211- Supported features:#{LBRK}"
+      features = %w{ EPRT EPSV SIZE }
+      features.each do |feat|
+        str << " #{feat}" << LBRK
+      end
+      str << "211 END" << LBRK
+
+      send_response(str, true)
     end
 
     # the original FTP spec had various options for hosts to negotiate how data
