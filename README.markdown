@@ -24,16 +24,13 @@ persistence layer.
 
 Create a config.rb file that loads the driver and then configures the server
 
-
     require 'my_fancy_driver'
 
     driver    MyFancyDriver
     user      'ftp'
     group     'ftp'
 
-
 Run your server like so:
-
 
     em-ftpd config.rb
 
