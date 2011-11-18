@@ -13,7 +13,7 @@ module EM::FTPD
       @port      = 21
 
       @driver    = nil
-      @driver_args = nil
+      @driver_args = []
     end
 
     def user(val = nil)

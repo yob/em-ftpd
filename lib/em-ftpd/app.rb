@@ -41,7 +41,7 @@ module EM::FTPD
 
       EventMachine::run do
         puts "Starting ftp server on 0.0.0.0:#{config.port}"
-        EventMachine::start_server("0.0.0.0", config.port, EM::FTPD::Server, config.driver, config.driver_args)
+        EventMachine::start_server("0.0.0.0", config.port, EM::FTPD::Server, config.driver, *config.driver_args)
 
         daemonise!(config)
         change_gid(config.gid)
