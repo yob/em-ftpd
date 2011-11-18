@@ -15,7 +15,7 @@ module EM::FTPD
     include Files
 
     COMMANDS = %w[quit type user retr stor port cdup cwd dele rmd pwd list size
-                  syst mkd pass xcup xpwd xcwd xrmd rest allo nlst pasv help
+                  syst mkd pass xcup xpwd xcwd xrmd rest allo nlst pasv epsv help
                   noop mode rnfr rnto stru]
 
     attr_reader :root, :name_prefix
@@ -141,26 +141,23 @@ module EM::FTPD
     # Passive FTP. At the clients request, listen on a port for an incoming
     # data connection. The listening socket is opened on a random port, so
     # the host and port is sent back to the client on the control socket.
+    #
     def cmd_pasv(param)
       send_unauthorised and return unless logged_in?
 
-      # close any existing data socket
-      close_datasocket
+      host, port = start_passive_socket
 
-      # grab the host/address the current connection is
-      # operating on
-      host = Socket.unpack_sockaddr_in( self.get_sockname ).last
-
-      # open a listening socket on the appropriate host
-      # and on a random port
-      @listen_sig = PassiveSocket.start(host, self)
-      port = PassiveSocket.get_port(@listen_sig)
-
-      # let the client know where to connect
-      p1 = (port / 256).to_i
-      p2 = port % 256
+      p1, p2 = *port.divmod(256)
 
       send_response "227 Entering Passive Mode (" + host.split(".").join(",") + ",#{p1},#{p2})"
+    end
+
+    # listen on a port, see RFC 2428
+    #
+    def cmd_epsv(param)
+      host, port = start_passive_socket
+
+      send_response "229 Entering Extended Passive Mode (|||#{port}|)"
     end
 
     # Active FTP. An alternative to Passive FTP. The client has a listening socket
@@ -310,6 +307,22 @@ module EM::FTPD
           block.call(data)
         end
       end
+    end
+
+    def start_passive_socket
+      # close any existing data socket
+      close_datasocket
+
+      # grab the host/address the current connection is
+      # operating on
+      host = Socket.unpack_sockaddr_in( self.get_sockname ).last
+
+      # open a listening socket on the appropriate host
+      # and on a random port
+      @listen_sig = PassiveSocket.start(host, self)
+      port = PassiveSocket.get_port(@listen_sig)
+
+      [host, port]
     end
 
     # all responses from an FTP server end with \r\n, so wrap the
