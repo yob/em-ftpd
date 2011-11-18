@@ -54,7 +54,7 @@ module EM::FTPD
 
     def update_procline(name)
       if name
-        $0 = "em-ftp - #{name}"
+        $0 = "em-ftp [#{name}]"
       else
         $0 = "em-ftp"
       end
