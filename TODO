@@ -1,0 +1,4 @@
+* logging support
+  * optional method on the driver to receive a copy of each line of
+    raw FTP commands?
+* optional "post_connection" method on driver that can trigger cleanup
