@@ -14,8 +14,7 @@ Some sample use cases include persisting data to:
 * redis
 * memory
 
-For some examples that demonstrate redis and memory persistence, check the
-examples/ directory.
+The examples directory contains a demonstration of in memory persistence.
 
 ## Installation
 
