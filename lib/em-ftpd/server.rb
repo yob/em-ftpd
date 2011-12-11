@@ -294,16 +294,36 @@ module EM::FTPD
         end
         data = StringIO.new(data) if data.kind_of?(String)
 
-        begin
-          bytes = 0
-          data.each do |line|
-            datasocket.send_data(line)
-            bytes += line.bytesize
+
+        if EM.reactor_running?
+          # send the data out in chunks, as fast as the client can recieve it -- not blocking the reactor in the process
+          streamer = IOStreamer.new(datasocket, data)
+          finalize = Proc.new {
+            close_datasocket
+            data.close if data.respond_to?(:close) && !data.closed?
+          }
+          streamer.callback {
+            send_response "226 Closing data connection, sent #{streamer.bytes_streamed} bytes"
+            finalize.call
+          }
+          streamer.errback { |ex| 
+            send_response "425 Error while streaming data, sent #{streamer.bytes_streamed} bytes"
+            finalize.call
+            raise ex 
+          }
+        else
+          # blocks until all data is sent
+          begin
+            bytes = 0
+            data.each do |line|
+              datasocket.send_data(line)
+              bytes += line.bytesize
+            end
+            send_response "226 Closing data connection, sent #{bytes} bytes"
+          ensure
+            close_datasocket
+            data.close if data.respond_to?(:close)
           end
-          send_response "226 Closing data connection, sent #{bytes} bytes"
-        ensure
-          close_datasocket
-          data.close if data.respond_to?(:close)
         end
       end
     end
