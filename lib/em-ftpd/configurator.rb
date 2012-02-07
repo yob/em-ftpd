@@ -47,7 +47,7 @@ module EM::FTPD
       return nil if @group.nil?
 
       begin
-        detail = Etc.getpwnam(@group)
+        detail = Etc.getgrnam(@group)
         return detail.gid
       rescue
         $stderr.puts "group must be nil or a real group" if detail.nil?
