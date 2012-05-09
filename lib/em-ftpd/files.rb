@@ -116,7 +116,7 @@ module EM::FTPD
 
       wait_for_datasocket do |datasocket|
         datasocket.on_stream { |chunk|
-          tmpfile.write chunk
+          tmpfile.write chunk.force_encoding 'UTF-8'
         }
         send_response "150 Data transfer starting"
         datasocket.callback {
