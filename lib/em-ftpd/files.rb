@@ -113,6 +113,7 @@ module EM::FTPD
 
     def cmd_stor_tempfile(target_path)
       tmpfile = Tempfile.new("em-ftp")
+      tmpfile.binmode
 
       wait_for_datasocket do |datasocket|
         datasocket.on_stream { |chunk|
