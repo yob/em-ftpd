@@ -286,43 +286,42 @@ module EM::FTPD
       wait_for_datasocket do |datasocket|
         if datasocket.nil?
           send_response "425 Error establishing connection"
-          return
-        end
-
-        if data.is_a?(Array)
-          data = data.join(LBRK) << LBRK
-        end
-        data = StringIO.new(data) if data.kind_of?(String)
-
-
-        if EM.reactor_running?
-          # send the data out in chunks, as fast as the client can recieve it -- not blocking the reactor in the process
-          streamer = IOStreamer.new(datasocket, data)
-          finalize = Proc.new {
-            close_datasocket
-            data.close if data.respond_to?(:close) && !data.closed?
-          }
-          streamer.callback {
-            send_response "226 Closing data connection, sent #{streamer.bytes_streamed} bytes"
-            finalize.call
-          }
-          streamer.errback { |ex| 
-            send_response "425 Error while streaming data, sent #{streamer.bytes_streamed} bytes"
-            finalize.call
-            raise ex 
-          }
         else
-          # blocks until all data is sent
-          begin
-            bytes = 0
-            data.each do |line|
-              datasocket.send_data(line)
-              bytes += line.bytesize
+          if data.is_a?(Array)
+            data = data.join(LBRK) << LBRK
+          end
+          data = StringIO.new(data) if data.kind_of?(String)
+
+
+          if EM.reactor_running?
+            # send the data out in chunks, as fast as the client can recieve it -- not blocking the reactor in the process
+            streamer = IOStreamer.new(datasocket, data)
+            finalize = Proc.new {
+              close_datasocket
+              data.close if data.respond_to?(:close) && !data.closed?
+            }
+            streamer.callback {
+              send_response "226 Closing data connection, sent #{streamer.bytes_streamed} bytes"
+              finalize.call
+            }
+            streamer.errback { |ex|
+              send_response "425 Error while streaming data, sent #{streamer.bytes_streamed} bytes"
+              finalize.call
+              raise ex
+            }
+          else
+            # blocks until all data is sent
+            begin
+              bytes = 0
+              data.each do |line|
+                datasocket.send_data(line)
+                bytes += line.bytesize
+              end
+              send_response "226 Closing data connection, sent #{bytes} bytes"
+            ensure
+              close_datasocket
+              data.close if data.respond_to?(:close)
             end
-            send_response "226 Closing data connection, sent #{bytes} bytes"
-          ensure
-            close_datasocket
-            data.close if data.respond_to?(:close)
           end
         end
       end
@@ -353,14 +352,14 @@ module EM::FTPD
         if datasocket.nil?
           send_response "425 Error establishing connection"
           yield false
-          return
-        end
+        else
 
-        # let the client know we're ready to start
-        send_response "150 Data transfer starting"
+          # let the client know we're ready to start
+          send_response "150 Data transfer starting"
 
-        datasocket.callback do |data|
-          block.call(data)
+          datasocket.callback do |data|
+            block.call(data)
+          end
         end
       end
     end
