@@ -17,11 +17,7 @@ module EM::FTPD
     end
 
     def user(val = nil)
-      if val
-        @user = val.to_s
-      else
-        @user
-      end
+      get_or_set(:user, val, :to_s)
     end
 
     def uid
@@ -36,39 +32,26 @@ module EM::FTPD
     end
 
     def group(val = nil)
-      if val
-        @group = val.to_s
-      else
-        @group
-      end
+      get_or_set(:group, val, :to_s)
     end
 
     def gid
       return nil if @group.nil?
 
       begin
-        detail = Etc.getpwnam(@group)
+        detail = Etc.getgrnam(@group)
         return detail.gid
       rescue
         $stderr.puts "group must be nil or a real group" if detail.nil?
       end
     end
 
-
     def daemonise(val = nil)
-      if val
-        @daemonise = val
-      else
-        @daemonise
-      end
+      get_or_set(:daemonise, val)
     end
 
     def driver(klass = nil)
-      if klass
-        @driver = klass
-      else
-        @driver
-      end
+      get_or_set(:driver, klass)
     end
 
     def driver_args(*args)
@@ -80,27 +63,15 @@ module EM::FTPD
     end
 
     def name(val = nil)
-      if val
-        @name = val.to_s
-      else
-        @name
-      end
+      get_or_set(:name, val, :to_s)
     end
 
     def pid_file(val = nil)
-      if val
-        @pid_file = val.to_s
-      else
-        @pid_file
-      end
+      get_or_set(:pid_file, val, :to_s)
     end
 
     def port(val = nil)
-      if val
-        @port = val.to_i
-      else
-        @port
-      end
+      get_or_set(:port, val, :to_i)
     end
 
     def check!
@@ -114,6 +85,19 @@ module EM::FTPD
     def die(msg)
       $stderr.puts msg
       exit 1
+    end
+    
+    def get_or_set(attribute, value, coercion_method = nil)
+      if value
+        converted_value = coercion_method ? value.send(coercion_method) : value
+        instance_variable_set(variable_name_for(attribute), converted_value)
+      else
+        instance_variable_get(variable_name_for(attribute))
+      end
+    end
+    
+    def variable_name_for(attribute)
+      :"@#{attribute}"
     end
   end
 
