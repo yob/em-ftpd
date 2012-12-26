@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'ostruct'
 
 describe EM::FTPD::Configurator do  
   describe "initialization" do    
@@ -27,8 +28,7 @@ describe EM::FTPD::Configurator do
   describe "#uid" do
     it "should retrieve the user id based on the user name" do
       subject.user 'justin'
-      Etc.should_receive(:getpwnam).with('justin').
-        and_return(Struct::Passwd.new('staff', '*********', 501, 20, 'Justin Leitgeb', '/Users/justin', '/bin/bash', 0, '', 0))
+      Etc.should_receive(:getpwnam).with('justin').and_return(OpenStruct.new(:uid => 501))
         
       subject.uid.should == 501
     end
