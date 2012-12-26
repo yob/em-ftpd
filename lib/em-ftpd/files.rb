@@ -100,7 +100,7 @@ module EM::FTPD
           send_response "150 Data transfer starting"
           @driver.put_file_streamed(target_path, datasocket) do |bytes|
             if bytes
-              send_response "200 OK, received #{bytes} bytes"
+              send_response "226 OK, received #{bytes} bytes"
             else
               send_action_not_taken
             end
@@ -125,7 +125,7 @@ module EM::FTPD
           tmpfile.flush
           @driver.put_file(target_path, tmpfile.path) do |bytes|
             if bytes
-              send_response "200 OK, received #{bytes} bytes"
+              send_response "226 OK, received #{bytes} bytes"
             else
               send_action_not_taken
             end
