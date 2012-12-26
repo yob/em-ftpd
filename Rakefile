@@ -3,7 +3,7 @@ require "bundler"
 Bundler.setup
 
 require 'rake'
-require 'rake/rdoctask'
+require 'rdoc/task'
 require 'rspec/core/rake_task'
 
 desc "Default Task"
@@ -18,8 +18,8 @@ end
 
 # Genereate the RDoc documentation
 desc "Create documentation"
-Rake::RDocTask.new("doc") do |rdoc|
-  rdoc.title = "pdf-reader"
+RDoc::Task.new do |rdoc|
+  rdoc.title = "em-ftpd"
   rdoc.rdoc_dir = (ENV['CC_BUILD_ARTIFACTS'] || 'doc') + '/rdoc'
   rdoc.rdoc_files.include('README.rdoc')
   rdoc.rdoc_files.include('TODO')
