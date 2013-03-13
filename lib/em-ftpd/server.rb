@@ -119,7 +119,7 @@ module EM::FTPD
 
     def cmd_feat(param)
       str = "211- Supported features:#{LBRK}"
-      features = %w{ EPRT EPSV SIZE }
+      features = %w{ EPRT EPSV SIZE REST }
       features.each do |feat|
         str << " #{feat}" << LBRK
       end
@@ -282,7 +282,7 @@ module EM::FTPD
     # ready to use, so it may take a few RTTs after the command is received at
     # the server before the data socket is ready.
     #
-    def send_outofband_data(data)
+    def send_outofband_data(data, restart_pos = 0)
       wait_for_datasocket do |datasocket|
         if datasocket.nil?
           send_response "425 Error establishing connection"
@@ -292,6 +292,7 @@ module EM::FTPD
           end
           data = StringIO.new(data) if data.kind_of?(String)
 
+          data.seek(restart_pos)
 
           if EM.reactor_running?
             # send the data out in chunks, as fast as the client can recieve it -- not blocking the reactor in the process

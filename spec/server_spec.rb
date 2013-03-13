@@ -551,10 +551,16 @@ describe EM::FTPD::Server, "REST" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
   end
 
-  it "should always respond with 500 when called" do
+  it "should accept a valid offset" do
     @c.reset_sent!
-    @c.receive_line("REST")
-    @c.sent_data.should match(/500.+/)
+    @c.receive_line("REST 1001")
+    @c.sent_data.should match(/350 Restart position accepted \(1001\)\./)
+  end
+
+  it "should reject an invalid offset" do
+    @c.reset_sent!
+    @c.receive_line("REST seven")
+    @c.sent_data.should match(/554 Invalid REST position \(seven\)\./)
   end
 end
 
