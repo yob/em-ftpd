@@ -22,7 +22,7 @@ module EM::FTPD
         if config.pid_file
           File.open(config.pid_file, "w") { |io| io.write pid }
         end
-        exit!
+        exit!(true)
       end
     end
 
