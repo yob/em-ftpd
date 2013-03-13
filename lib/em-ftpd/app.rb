@@ -62,7 +62,7 @@ module EM::FTPD
 
     def change_gid(gid)
       if gid && Process.gid == 0
-        Process.gid = gid
+        Process::GID.change_privilege(gid)
       end
     end
 
