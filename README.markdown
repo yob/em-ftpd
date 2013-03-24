@@ -1,5 +1,12 @@
 # em-ftpd
 
+## Maintainer Required
+
+I'm no longer actively maintaining this library. If anyone would like to take
+over maintainership, please let me know via github issue #6.
+
+## Overview
+
 A mini-FTP server framework built on top of the EventMacine gem. By providing a
 simple driver class that responds to a handful of methods you can have a
 complete FTP server.
