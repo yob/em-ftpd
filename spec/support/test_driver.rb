@@ -64,6 +64,16 @@ class TestDriver
     yield path == "/four"
   end
 
+  def mtime(path, &block)
+    yield case path
+          when "/files"         then Time.utc(2013,4,21,11,0,0)
+          when "/one.txt"       then Time.utc(2013,4,21,12,0,0)
+          when "/files/two.txt" then Time.utc(2013,4,21,13,0,0)
+          else
+            false
+          end
+  end
+
   private
 
   def dir_item(name)
