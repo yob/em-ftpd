@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.authors = ["James Healy"]
   spec.email   = ["jimmy@deefa.com"]
   spec.homepage = "http://github.com/yob/em-ftpd"
-  spec.required_ruby_version = ">=1.9.2"
+  spec.required_ruby_version = ">=2.2"
 
   spec.add_development_dependency("rake", "~> 10.0")
   spec.add_development_dependency("rspec", "~>2.6")
