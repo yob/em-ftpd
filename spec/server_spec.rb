@@ -9,11 +9,11 @@ describe EM::FTPD::Server, "initialisation" do
   end
 
   it "should default to a root name_prefix" do
-    @c.name_prefix.should eql("/")
+    expect(@c.name_prefix).to eql("/")
   end
 
   it "should respond with 220 when connection is opened" do
-    @c.sent_data.should match(/^220/)
+    expect(@c.sent_data).to match(/^220/)
   end
 end
 
@@ -23,7 +23,7 @@ describe EM::FTPD::Server, "ALLO" do
     @c = EM::FTPD::Server.new(nil, TestDriver.new)
     @c.reset_sent!
     @c.receive_line("ALLO")
-    @c.sent_data.should match(/^202/)
+    expect(@c.sent_data).to match(/^202/)
   end
 end
 
@@ -36,7 +36,7 @@ describe EM::FTPD::Server, "USER" do
   it "should respond with 331 when called by non-logged in user" do
     @c.reset_sent!
     @c.receive_line("USER jh")
-    @c.sent_data.should match(/331.+/)
+    expect(@c.sent_data).to match(/331.+/)
   end
 
   it "should respond with 500 when called by a logged in user" do
@@ -44,7 +44,7 @@ describe EM::FTPD::Server, "USER" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("USER test")
-    @c.sent_data.should match(/500.+/)
+    expect(@c.sent_data).to match(/500.+/)
   end
 
 end
@@ -59,34 +59,34 @@ describe EM::FTPD::Server, "PASS" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("PASS 1234")
-    @c.sent_data.should match(/202.+/)
+    expect(@c.sent_data).to match(/202.+/)
   end
 
   it "should respond with 553 when called with no param" do
     @c.receive_line("USER test")
     @c.reset_sent!
     @c.receive_line("PASS")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should respond with 530 when called without first providing a username" do
     @c.reset_sent!
     @c.receive_line("PASS 1234")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 
   it "should respond with 230 when user is authenticated" do
     @c.receive_line("USER test")
     @c.reset_sent!
     @c.receive_line("PASS 1234")
-    @c.sent_data.should match(/230.+/)
+    expect(@c.sent_data).to match(/230.+/)
   end
 
   it "should respond with 530 when password is incorrect" do
     @c.receive_line("USER test")
     @c.reset_sent!
     @c.receive_line("PASS 1235")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 end
 
@@ -100,8 +100,8 @@ end
     it "should respond with 530 if user is not logged in" do
       @c.reset_sent!
       @c.receive_line(command)
-      @c.sent_data.should match(/530.*/)
-      @c.name_prefix.should eql("/")
+      expect(@c.sent_data).to match(/530.*/)
+      expect(@c.name_prefix).to eql("/")
     end
 
     it "should respond with 250 if called from root" do
@@ -109,8 +109,8 @@ end
       @c.receive_line("PASS 1234")
       @c.reset_sent!
       @c.receive_line(command)
-      @c.sent_data.should match(/250.+/)
-      @c.name_prefix.should eql("/")
+      expect(@c.sent_data).to match(/250.+/)
+      expect(@c.name_prefix).to eql("/")
     end
 
     it "should respond with 250 if called from incoming dir" do
@@ -119,8 +119,8 @@ end
       @c.receive_line("CWD files")
       @c.reset_sent!
       @c.receive_line(command)
-      @c.sent_data.should match(/250.+/)
-      @c.name_prefix.should eql("/")
+      expect(@c.sent_data).to match(/250.+/)
+      expect(@c.name_prefix).to eql("/")
     end
   end
 end
@@ -133,7 +133,7 @@ describe EM::FTPD::Server, "CWD" do
   it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("CWD")
-    @c.sent_data.should match(/530.*/)
+    expect(@c.sent_data).to match(/530.*/)
   end
 
   it "should respond with 250 if called with '..' from users home" do
@@ -141,8 +141,8 @@ describe EM::FTPD::Server, "CWD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("CWD ..")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/")
+    expect(@c.sent_data).to match(/250.+/)
+    expect(@c.name_prefix).to eql("/")
   end
 
   it "should respond with 250 if called with '.' from users home" do
@@ -150,8 +150,8 @@ describe EM::FTPD::Server, "CWD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("CWD .")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/")
+    expect(@c.sent_data).to match(/250.+/)
+    expect(@c.name_prefix).to eql("/")
   end
 
   it "should respond with 250 if called with '/' from users home" do
@@ -159,8 +159,8 @@ describe EM::FTPD::Server, "CWD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("CWD /")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/")
+    expect(@c.sent_data).to match(/250.+/)
+    expect(@c.name_prefix).to eql("/")
   end
 
   it "should respond with 250 if called with 'files' from users home" do
@@ -168,8 +168,8 @@ describe EM::FTPD::Server, "CWD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("CWD files")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/files")
+    expect(@c.sent_data).to match(/250.+/)
+    expect(@c.name_prefix).to eql("/files")
   end
 
   it "should respond with 250 if called with 'files/' from users home" do
@@ -177,8 +177,8 @@ describe EM::FTPD::Server, "CWD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("CWD files/")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/files")
+    expect(@c.sent_data).to match(/250.+/)
+    expect(@c.name_prefix).to eql("/files")
   end
 
   it "should respond with 250 if called with '/files/' from users home" do
@@ -186,8 +186,8 @@ describe EM::FTPD::Server, "CWD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("CWD /files/")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/files")
+    expect(@c.sent_data).to match(/250.+/)
+    expect(@c.name_prefix).to eql("/files")
   end
 
   it "should respond with 250 if called with '..' from the files dir" do
@@ -196,8 +196,8 @@ describe EM::FTPD::Server, "CWD" do
     @c.receive_line("CWD files")
     @c.reset_sent!
     @c.receive_line("CWD ..")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/")
+    expect(@c.sent_data).to match(/250.+/)
+    expect(@c.name_prefix).to eql("/")
   end
 
   it "should respond with 250 if called with '/files' from the files dir" do
@@ -206,18 +206,18 @@ describe EM::FTPD::Server, "CWD" do
     @c.receive_line("CWD files")
     @c.reset_sent!
     @c.receive_line("CWD /files")
-    @c.sent_data.should match(/250.+/)
-    @c.name_prefix.should eql("/files")
+    expect(@c.sent_data).to match(/250.+/)
+    expect(@c.name_prefix).to eql("/files")
   end
 
   it "should respond with 550 if called with unrecognised dir" do
     @c.receive_line("USER test")
     @c.receive_line("PASS 1234")
     @c.reset_sent!
-    @c.name_prefix.should eql("/")
+    expect(@c.name_prefix).to eql("/")
     @c.receive_line("CWD test")
-    @c.sent_data.should match(/550.+/)
-    @c.name_prefix.should eql("/")
+    expect(@c.sent_data).to match(/550.+/)
+    expect(@c.name_prefix).to eql("/")
   end
 
 end
@@ -230,7 +230,7 @@ describe EM::FTPD::Server, "DELE" do
   it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("DELE x")
-    @c.sent_data.should match(/530.*/)
+    expect(@c.sent_data).to match(/530.*/)
   end
 
   it "should respond with 553 when the paramater is omitted" do
@@ -239,7 +239,7 @@ describe EM::FTPD::Server, "DELE" do
     @c.reset_sent!
     @c.reset_sent!
     @c.receive_line("DELE")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should respond with 250 when the file is deleted" do
@@ -248,7 +248,7 @@ describe EM::FTPD::Server, "DELE" do
     @c.reset_sent!
     @c.reset_sent!
     @c.receive_line("DELE four.txt")
-    @c.sent_data.should match(/250.+/)
+    expect(@c.sent_data).to match(/250.+/)
   end
 
   it "should respond with 550 when the file is not deleted" do
@@ -257,7 +257,7 @@ describe EM::FTPD::Server, "DELE" do
     @c.reset_sent!
     @c.reset_sent!
     @c.receive_line("DELE one.txt")
-    @c.sent_data.should match(/550.+/)
+    expect(@c.sent_data).to match(/550.+/)
   end
 
 end
@@ -269,7 +269,7 @@ describe EM::FTPD::Server, "HELP" do
   it "should always respond with 214 when called" do
     @c.reset_sent!
     @c.receive_line("HELP")
-    @c.sent_data.should match(/214.+/)
+    expect(@c.sent_data).to match(/214.+/)
   end
 end
 
@@ -300,7 +300,7 @@ describe EM::FTPD::Server, "LIST" do
   it "should respond with 530 when called by non-logged in user" do
     @c.reset_sent!
     @c.receive_line("LIST")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 
   it "should respond with 150 ...425  when called with no data socket" do
@@ -308,7 +308,7 @@ describe EM::FTPD::Server, "LIST" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("LIST")
-    @c.sent_data.should match(/150.+425.+/m)
+    expect(@c.sent_data).to match(/150.+425.+/m)
   end
 
   it "should respond with 150 ... 226 when called in the root dir with no param" do
@@ -317,8 +317,8 @@ describe EM::FTPD::Server, "LIST" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("LIST")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(root_files)
+    expect(@c.sent_data).to match(/150.+226.+/m)
+    expect(@c.oobdata.split(EM::FTPD::Server::LBRK)).to eql(root_files)
   end
 
   it "should respond with 150 ... 226 when called in the files dir with no param" do
@@ -328,8 +328,8 @@ describe EM::FTPD::Server, "LIST" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("LIST")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(dir_files)
+    expect(@c.sent_data).to match(/150.+226.+/m)
+    expect(@c.oobdata.split(EM::FTPD::Server::LBRK)).to eql(dir_files)
   end
 
   it "should respond with 150 ... 226 when called in the files dir with wildcard (LIST *.txt)"
@@ -341,8 +341,8 @@ describe EM::FTPD::Server, "LIST" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("LIST ..")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(root_files)
+    expect(@c.sent_data).to match(/150.+226.+/m)
+    expect(@c.oobdata.split(EM::FTPD::Server::LBRK)).to eql(root_files)
   end
 
   it "should respond with 150 ... 226 when called in the subdir with / param" do
@@ -352,8 +352,8 @@ describe EM::FTPD::Server, "LIST" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("LIST /")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(root_files)
+    expect(@c.sent_data).to match(/150.+226.+/m)
+    expect(@c.oobdata.split(EM::FTPD::Server::LBRK)).to eql(root_files)
   end
 
   it "should respond with 150 ... 226 when called in the root with files param" do
@@ -362,8 +362,8 @@ describe EM::FTPD::Server, "LIST" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("LIST files")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(dir_files)
+    expect(@c.sent_data).to match(/150.+226.+/m)
+    expect(@c.oobdata.split(EM::FTPD::Server::LBRK)).to eql(dir_files)
   end
 
   it "should respond with 150 ... 226 when called in the root with files/ param" do
@@ -372,8 +372,8 @@ describe EM::FTPD::Server, "LIST" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("LIST files/")
-    @c.sent_data.should match(/150.+226.+/m)
-    @c.oobdata.split(EM::FTPD::Server::LBRK).should eql(dir_files)
+    expect(@c.sent_data).to match(/150.+226.+/m)
+    expect(@c.oobdata.split(EM::FTPD::Server::LBRK)).to eql(dir_files)
   end
 
   it "should properly list subdirs etc."
@@ -388,7 +388,7 @@ describe EM::FTPD::Server, "MKD" do
   it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("MKD x")
-    @c.sent_data.should match(/530.*/)
+    expect(@c.sent_data).to match(/530.*/)
   end
 
   it "should respond with 553 when the paramater is omitted" do
@@ -396,7 +396,7 @@ describe EM::FTPD::Server, "MKD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("MKD")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should respond with 257 when the directory is created" do
@@ -404,7 +404,7 @@ describe EM::FTPD::Server, "MKD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("MKD four")
-    @c.sent_data.should match(/257.+/)
+    expect(@c.sent_data).to match(/257.+/)
   end
 
 
@@ -413,7 +413,7 @@ describe EM::FTPD::Server, "MKD" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("MKD five")
-    @c.sent_data.should match(/550.+/)
+    expect(@c.sent_data).to match(/550.+/)
   end
 
 end
@@ -428,13 +428,13 @@ describe EM::FTPD::Server, "MODE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("MODE")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should always respond with 530 when called by user not logged in" do
     @c.reset_sent!
     @c.receive_line("MODE S")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 
   it "should always respond with 200 when called with S param" do
@@ -442,7 +442,7 @@ describe EM::FTPD::Server, "MODE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("MODE S")
-    @c.sent_data.should match(/200.+/)
+    expect(@c.sent_data).to match(/200.+/)
   end
 
   it "should always respond with 504 when called with non-S param" do
@@ -450,7 +450,7 @@ describe EM::FTPD::Server, "MODE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("MODE F")
-    @c.sent_data.should match(/504.+/)
+    expect(@c.sent_data).to match(/504.+/)
   end
 end
 
@@ -462,7 +462,7 @@ describe EM::FTPD::Server, "NOOP" do
   it "should always respond with 202 when called" do
     @c.reset_sent!
     @c.receive_line("NOOP")
-    @c.sent_data.should match(/200.*/)
+    expect(@c.sent_data).to match(/200.*/)
   end
 end
 
@@ -477,7 +477,7 @@ end
     it "should always respond with 550 (permission denied) when called by non-logged in user" do
       @c.reset_sent!
       @c.receive_line(command)
-      @c.sent_data.should match(/530.+/)
+      expect(@c.sent_data).to match(/530.+/)
     end
 
     it 'should always respond with 257 "/" when called from root dir' do
@@ -485,7 +485,7 @@ end
       @c.receive_line("PASS 1234")
       @c.reset_sent!
       @c.receive_line(command)
-      @c.sent_data.strip.should eql('257 "/" is the current directory')
+      expect(@c.sent_data.strip).to eql('257 "/" is the current directory')
     end
 
     it 'should always respond with 257 "/files" when called from files dir' do
@@ -494,7 +494,7 @@ end
       @c.receive_line("CWD files")
       @c.reset_sent!
       @c.receive_line(command)
-      @c.sent_data.strip.should eql('257 "/files" is the current directory')
+      expect(@c.sent_data.strip).to eql('257 "/files" is the current directory')
     end
   end
 end
@@ -509,13 +509,13 @@ describe EM::FTPD::Server, "RETR" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("RETR")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should always respond with 530 when called by user not logged in" do
     @c.reset_sent!
     @c.receive_line("RETR blah.txt")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 
   it "should always respond with 551 when called with an invalid file" do
@@ -524,7 +524,7 @@ describe EM::FTPD::Server, "RETR" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("RETR blah.txt")
-    @c.sent_data.should match(/551.+/)
+    expect(@c.sent_data).to match(/551.+/)
   end
 
   it "should always respond with 150..226 when called with valid file" do
@@ -533,7 +533,7 @@ describe EM::FTPD::Server, "RETR" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("RETR one.txt")
-    @c.sent_data.should match(/150.+226.+/m)
+    expect(@c.sent_data).to match(/150.+226.+/m)
   end
 
   it "should always respond with 150..226 when called outside files dir with appropriate param" do
@@ -542,7 +542,7 @@ describe EM::FTPD::Server, "RETR" do
     @c.receive_line("PASV")
     @c.reset_sent!
     @c.receive_line("RETR files/two.txt")
-    @c.sent_data.should match(/150.+226.+/m)
+    expect(@c.sent_data).to match(/150.+226.+/m)
   end
 end
 
@@ -554,13 +554,13 @@ describe EM::FTPD::Server, "REST" do
   it "should accept a valid offset" do
     @c.reset_sent!
     @c.receive_line("REST 1001")
-    @c.sent_data.should match(/350 Restart position accepted \(1001\)\./)
+    expect(@c.sent_data).to match(/350 Restart position accepted \(1001\)\./)
   end
 
   it "should reject an invalid offset" do
     @c.reset_sent!
     @c.receive_line("REST seven")
-    @c.sent_data.should match(/554 Invalid REST position \(seven\)\./)
+    expect(@c.sent_data).to match(/554 Invalid REST position \(seven\)\./)
   end
 end
 
@@ -573,7 +573,7 @@ end
     it "should respond with 530 if user is not logged in" do
       @c.reset_sent!
       @c.receive_line("#{command} x")
-      @c.sent_data.should match(/530.*/)
+      expect(@c.sent_data).to match(/530.*/)
     end
 
     it "should respond with 553 when the paramater is omitted" do
@@ -582,7 +582,7 @@ end
       @c.reset_sent!
       @c.reset_sent!
       @c.receive_line("#{command}")
-      @c.sent_data.should match(/553.+/)
+      expect(@c.sent_data).to match(/553.+/)
     end
 
     it "should respond with 250 when the directory is deleted" do
@@ -591,7 +591,7 @@ end
       @c.reset_sent!
       @c.reset_sent!
       @c.receive_line("#{command} four")
-      @c.sent_data.should match(/250.+/)
+      expect(@c.sent_data).to match(/250.+/)
     end
 
     it "should respond with 550 when the directory is not deleted" do
@@ -600,7 +600,7 @@ end
       @c.reset_sent!
       @c.reset_sent!
       @c.receive_line("#{command} x")
-      @c.sent_data.should match(/550.+/)
+      expect(@c.sent_data).to match(/550.+/)
     end
   end
 end
@@ -613,7 +613,7 @@ describe EM::FTPD::Server, "RNFR" do
   it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("RNFR x")
-    @c.sent_data.should match(/530.*/)
+    expect(@c.sent_data).to match(/530.*/)
   end
 
   it "should respond with 553 when the paramater is omitted" do
@@ -621,7 +621,7 @@ describe EM::FTPD::Server, "RNFR" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("RNFR")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should always respond with 350 when called" do
@@ -629,7 +629,7 @@ describe EM::FTPD::Server, "RNFR" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("RNFR x")
-    @c.sent_data.should match(/350.+/)
+    expect(@c.sent_data).to match(/350.+/)
   end
 end
 
@@ -641,7 +641,7 @@ describe EM::FTPD::Server, "RNTO" do
   it "should respond with 530 if user is not logged in" do
     @c.reset_sent!
     @c.receive_line("RNTO x")
-    @c.sent_data.should match(/530.*/)
+    expect(@c.sent_data).to match(/530.*/)
   end
 
   it "should respond with 553 when the paramater is omitted" do
@@ -649,7 +649,7 @@ describe EM::FTPD::Server, "RNTO" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("RNTO")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should respond with XXX when the RNFR command is omitted"
@@ -661,7 +661,7 @@ describe EM::FTPD::Server, "RNTO" do
     @c.reset_sent!
     @c.receive_line("RNFR one.txt")
     @c.receive_line("RNTO two.txt")
-    @c.sent_data.should match(/250.+/)
+    expect(@c.sent_data).to match(/250.+/)
   end
 
   it "should respond with 550 when the file is not renamed" do
@@ -671,7 +671,7 @@ describe EM::FTPD::Server, "RNTO" do
     @c.reset_sent!
     @c.receive_line("RNFR two.txt")
     @c.receive_line("RNTO one.txt")
-    @c.sent_data.should match(/550.+/)
+    expect(@c.sent_data).to match(/550.+/)
   end
 
 end
@@ -684,7 +684,7 @@ describe EM::FTPD::Server, "QUIT" do
   it "should always respond with 221 when called" do
     @c.reset_sent!
     @c.receive_line("QUIT")
-    @c.sent_data.should match(/221.+/)
+    expect(@c.sent_data).to match(/221.+/)
   end
 end
 
@@ -697,7 +697,7 @@ describe EM::FTPD::Server, "SIZE" do
   it "should always respond with 530 when called by a non logged in user" do
     @c.reset_sent!
     @c.receive_line("SIZE one.txt")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 
   it "should always respond with 553 when called with no param" do
@@ -705,7 +705,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("SIZE")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should always respond with 450 when called with a directory param" do
@@ -713,7 +713,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("SIZE files")
-    @c.sent_data.should match(/450.+/)
+    expect(@c.sent_data).to match(/450.+/)
   end
 
   it "should always respond with 450 when called with a non-file param" do
@@ -721,7 +721,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("SIZE blah")
-    @c.sent_data.should match(/450.+/)
+    expect(@c.sent_data).to match(/450.+/)
   end
 
   it "should always respond with 213 when called with a valid file param" do
@@ -729,7 +729,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("SIZE one.txt")
-    @c.sent_data.should match(/^213 56/)
+    expect(@c.sent_data).to match(/^213 56/)
   end
 
   it "should always respond with 213 when called with a valid file param" do
@@ -737,7 +737,7 @@ describe EM::FTPD::Server, "SIZE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("SIZE files/two.txt")
-    @c.sent_data.should match(/^213 40/)
+    expect(@c.sent_data).to match(/^213 40/)
   end
 end
 
@@ -752,13 +752,13 @@ describe EM::FTPD::Server, "STRU" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("STRU")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should always respond with 530 when called by user not logged in" do
     @c.reset_sent!
     @c.receive_line("STRU F")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 
   it "should always respond with 200 when called with F param" do
@@ -766,7 +766,7 @@ describe EM::FTPD::Server, "STRU" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("STRU F")
-    @c.sent_data.should match(/200.+/)
+    expect(@c.sent_data).to match(/200.+/)
   end
 
   it "should always respond with 504 when called with non-F param" do
@@ -774,7 +774,7 @@ describe EM::FTPD::Server, "STRU" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("STRU S")
-    @c.sent_data.should match(/504.+/)
+    expect(@c.sent_data).to match(/504.+/)
   end
 end
 
@@ -786,7 +786,7 @@ describe EM::FTPD::Server, "SYST" do
   it "should respond with 530 when called by non-logged in user" do
     @c.reset_sent!
     @c.receive_line("SYST")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 
   it "should respond with 215 when called by a logged in user" do
@@ -794,9 +794,9 @@ describe EM::FTPD::Server, "SYST" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("SYST")
-    @c.sent_data.should match(/215.+/)
-    @c.sent_data.include?("UNIX").should be_true
-    @c.sent_data.include?("L8").should be_true
+    expect(@c.sent_data).to match(/215.+/)
+    expect(@c.sent_data.include?("UNIX")).to be_truthy
+    expect(@c.sent_data.include?("L8")).to be_truthy
   end
 
 end
@@ -809,7 +809,7 @@ describe EM::FTPD::Server, "TYPE" do
   it "should respond with 530 when called by non-logged in user" do
     @c.reset_sent!
     @c.receive_line("TYPE A")
-    @c.sent_data.should match(/530.+/)
+    expect(@c.sent_data).to match(/530.+/)
   end
 
   it "should respond with 553 when called with no param" do
@@ -817,7 +817,7 @@ describe EM::FTPD::Server, "TYPE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("TYPE")
-    @c.sent_data.should match(/553.+/)
+    expect(@c.sent_data).to match(/553.+/)
   end
 
   it "should respond with 200 when called with 'A' by a logged in user" do
@@ -825,8 +825,8 @@ describe EM::FTPD::Server, "TYPE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("TYPE A")
-    @c.sent_data.should match(/200.+/)
-    @c.sent_data.include?("ASCII").should be_true
+    expect(@c.sent_data).to match(/200.+/)
+    expect(@c.sent_data.include?("ASCII")).to be_truthy
   end
 
   it "should respond with 200 when called with 'I' by a logged in user" do
@@ -834,8 +834,8 @@ describe EM::FTPD::Server, "TYPE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("TYPE I")
-    @c.sent_data.should match(/200.+/)
-    @c.sent_data.include?("binary").should be_true
+    expect(@c.sent_data).to match(/200.+/)
+    expect(@c.sent_data.include?("binary")).to be_truthy
   end
 
   it "should respond with 500 when called by a logged in user with un unrecognised param" do
@@ -843,7 +843,7 @@ describe EM::FTPD::Server, "TYPE" do
     @c.receive_line("PASS 1234")
     @c.reset_sent!
     @c.receive_line("TYPE T")
-    @c.sent_data.should match(/500.+/)
+    expect(@c.sent_data).to match(/500.+/)
   end
 
 end
