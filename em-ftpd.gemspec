@@ -22,5 +22,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency("guard-bundler")
   spec.add_development_dependency("guard-rspec")
 
-  spec.add_dependency('eventmachine', "~> 1.0.0.beta1")
+  spec.add_dependency('eventmachine')
 end
