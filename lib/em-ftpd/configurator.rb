@@ -86,7 +86,7 @@ module EM::FTPD
       $stderr.puts msg
       exit 1
     end
-    
+
     def get_or_set(attribute, value, coercion_method = nil)
       if value
         converted_value = coercion_method ? value.send(coercion_method) : value
@@ -95,7 +95,7 @@ module EM::FTPD
         instance_variable_get(variable_name_for(attribute))
       end
     end
-    
+
     def variable_name_for(attribute)
       :"@#{attribute}"
     end

@@ -1,7 +1,7 @@
 require 'eventmachine'
 
 module EM::FTPD
-  # 
+  #
   # Like EventMachine::FileStreamer, this class handles streaming of (potientially huge amounts of) data.
   # This class can stream arbitrary IO objects. It is not bound to only stream files.
   #
@@ -31,7 +31,7 @@ module EM::FTPD
       @connection       = connection
       @io               = io
       @bytes_streamed   = 0
- 
+
       stream_one_chunk
     end
 

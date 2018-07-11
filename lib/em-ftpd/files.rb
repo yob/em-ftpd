@@ -24,7 +24,7 @@ module EM::FTPD
       if param.match(/^\d+$/)
         @restart_pos = param.to_i
         send_response "350 Restart position accepted (#{@restart_pos})."
-      else 
+      else
         send_response "554 Invalid REST position (#{param})."
       end
     end
