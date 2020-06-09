@@ -83,8 +83,5 @@ end
 # configure the server
 driver     FakeFTPDriver
 #driver_args 1, 2, 3
-#user      "ftp"
-#group     "ftp"
-#daemonise false
 #name      "fakeftp"
 #pid_file  "/var/run/fakeftp.pid"

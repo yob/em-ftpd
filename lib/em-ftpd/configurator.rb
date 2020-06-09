@@ -5,49 +5,12 @@ module EM::FTPD
   class Configurator
 
     def initialize
-      @user      = nil
-      @group     = nil
-      @daemonise = false
       @name      = nil
       @pid_file  = nil
       @port      = 21
 
       @driver    = nil
       @driver_args = []
-    end
-
-    def user(val = nil)
-      get_or_set(:user, val, :to_s)
-    end
-
-    def uid
-      return nil if @user.nil?
-
-      begin
-        detail = Etc.getpwnam(@user)
-        return detail.uid
-      rescue
-        $stderr.puts "user must be nil or a real account" if detail.nil?
-      end
-    end
-
-    def group(val = nil)
-      get_or_set(:group, val, :to_s)
-    end
-
-    def gid
-      return nil if @group.nil?
-
-      begin
-        detail = Etc.getgrnam(@group)
-        return detail.gid
-      rescue
-        $stderr.puts "group must be nil or a real group" if detail.nil?
-      end
-    end
-
-    def daemonise(val = nil)
-      get_or_set(:daemonise, val)
     end
 
     def driver(klass = nil)
