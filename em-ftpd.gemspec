@@ -5,7 +5,6 @@ Gem::Specification.new do |spec|
   spec.description = "Build a custom FTP daemon backed by a datastore of your choice"
   spec.files =  Dir.glob("{bin,examples,lib}/**/**/*") + ["Gemfile", "README.markdown","MIT-LICENSE"]
   spec.executables << "em-ftpd"
-  spec.has_rdoc = true
   spec.extra_rdoc_files = %w{README.markdown MIT-LICENSE }
   spec.rdoc_options << '--title' << 'EM::FTPd Documentation' <<
                        '--main'  << 'README.markdown' << '-q'
