@@ -7,25 +7,6 @@ module EM::FTPD
   class App
     include Singleton
 
-    def daemonise!(config)
-      return unless config.daemonise
-
-      ## close unneeded descriptors,
-      $stdin.reopen("/dev/null")
-      $stdout.reopen("/dev/null","w")
-      $stderr.reopen("/dev/null","w")
-
-      ## drop into the background.
-      pid = fork
-      if pid
-        ## parent: save pid of child, then exit
-        if config.pid_file
-          File.open(config.pid_file, "w") { |io| io.write pid }
-        end
-        exit!(true)
-      end
-    end
-
     def self.start(config_path)
       self.instance.start(config_path)
     end
@@ -43,9 +24,6 @@ module EM::FTPD
         puts "Starting ftp server on 0.0.0.0:#{config.port}"
         EventMachine::start_server("0.0.0.0", config.port, EM::FTPD::Server, config.driver, *config.driver_args)
 
-        daemonise!(config)
-        change_gid(config.gid)
-        change_uid(config.uid)
         setup_signal_handlers
       end
     end
@@ -57,18 +35,6 @@ module EM::FTPD
         $0 = "em-ftp [#{name}]"
       else
         $0 = "em-ftp"
-      end
-    end
-
-    def change_gid(gid)
-      if gid && Process.gid == 0
-        Process::GID.change_privilege(gid)
-      end
-    end
-
-    def change_uid(uid)
-      if uid && Process.euid == 0
-        Process::Sys.setuid(uid)
       end
     end
 
