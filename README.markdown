@@ -98,6 +98,9 @@ yield the appropriate value:
     - an array of strings to join with the standard FTP line break and send to
       the client
 
+    mtime(path, &block)
+    - time of last modification or nil if the file doesn't exist
+
 The driver MUST have one of the following methods. Each method MUST accept a
 block and yield the appropriate value:
 

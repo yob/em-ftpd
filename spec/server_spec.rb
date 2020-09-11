@@ -847,3 +847,56 @@ describe EM::FTPD::Server, "TYPE" do
   end
 
 end
+
+describe EM::FTPD::Server, "MDTM" do
+
+  before(:each) do
+    @c = EM::FTPD::Server.new(nil, TestDriver.new)
+  end
+
+  it "should always respond with 530 when called by a non logged in user" do
+    @c.reset_sent!
+    @c.receive_line("MDTM one.txt")
+    @c.sent_data.should match(/530.+/)
+  end
+
+  it "should always respond with 553 when called with no param" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("MDTM")
+    @c.sent_data.should match(/553.+/)
+  end
+
+  it "should always respond with 213 when called with a directory param" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("MDTM files")
+    @c.sent_data.should match(/^213 20130421110000/)
+  end
+
+  it "should always respond with 550 when called with a non-file param" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("MDTM blah")
+    @c.sent_data.should match(/550.+/)
+  end
+
+  it "should always respond with 213 when called with a valid file param" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("MDTM one.txt")
+    @c.sent_data.should match(/^213 20130421120000/)
+  end
+
+  it "should always respond with 213 when called with a valid file param" do
+    @c.receive_line("USER test")
+    @c.receive_line("PASS 1234")
+    @c.reset_sent!
+    @c.receive_line("MDTM files/two.txt")
+    @c.sent_data.should match(/^213 20130421130000/)
+  end
+end
